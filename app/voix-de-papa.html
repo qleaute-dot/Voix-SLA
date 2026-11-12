@@ -1,0 +1,688 @@
+<title>Voix de Papa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:wght@500;600&display=swap">
+<style>
+/* Layout: sticky speech bar on top, one large-target view in the middle, four-tab bar at the bottom. Atkinson Hyperlegible for every control (built for low vision), Newsreader only where the life story is told. */
+:root {
+  --bg: #EDF2F3;
+  --surface: #FFFFFF;
+  --surface-2: #DFE9EB;
+  --fg: #10252B;
+  --muted: #4A6269;
+  --line: #BFD0D4;
+  --accent: #0B6B73;
+  --accent-fg: #FFFFFF;
+  --accent-soft: #D3EBED;
+  --alert: #B3261E;
+  --alert-soft: #FBE4E1;
+  --font-ui: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-story: "Newsreader", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B171B; --surface: #14262C; --surface-2: #1B323A; --fg: #E7F1F3; --muted: #9DB5BB;
+    --line: #2A444D; --accent: #59C6CC; --accent-fg: #052B2E; --accent-soft: #143A40;
+    --alert: #FF8A80; --alert-soft: #3D1B1A; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B171B; --surface: #14262C; --surface-2: #1B323A; --fg: #E7F1F3; --muted: #9DB5BB;
+  --line: #2A444D; --accent: #59C6CC; --accent-fg: #052B2E; --accent-soft: #143A40;
+  --alert: #FF8A80; --alert-soft: #3D1B1A; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 18px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 130px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.wrap { max-width: 1080px; margin: 0 auto; }
+
+/* speech bar */
+.speechbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: var(--surface); border-bottom: 1px solid var(--line);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 12px max(16px, env(safe-area-inset-left, 0px)); }
+.speechbar .wrap { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.speechbar .label { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); width: 100%; }
+.speechbar .src { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 6px; letter-spacing: .04em; background: var(--surface-2); }
+.speechbar .src.papa { background: var(--accent-soft); color: var(--fg); }
+.speechbar .said { flex: 1 1 260px; min-width: 0; font-family: var(--font-story); font-size: clamp(1.3rem, 3.2vw, 1.9rem); line-height: 1.25; font-weight: 500; overflow-wrap: anywhere; }
+.speechbar .said.idle { color: var(--muted); font-family: var(--font-ui); font-size: 1.05rem; }
+.speechbar .acts { display: flex; gap: 8px; }
+.small-btn { min-height: 48px; padding: 8px 18px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); font-weight: 700; }
+.small-btn:hover { border-color: var(--accent); }
+.small-btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+main { padding-block: 22px; }
+.view h1 { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; font-weight: 700; }
+.note { background: var(--accent-soft); border-radius: 12px; padding: 12px 16px; margin: 0 0 18px; font-size: 16px; }
+
+/* category pills */
+.pills { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.pill { min-height: 56px; padding: 8px 22px; border-radius: 28px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; font-size: 1.05rem; }
+.pill[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.pill.alert { border-color: var(--alert); color: var(--alert); }
+.pill.alert[aria-pressed="true"] { background: var(--alert); color: var(--surface); }
+
+/* phrase tiles */
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+.tile-wrap { position: relative; min-width: 0; }
+.tile { width: 100%; min-height: 112px; padding: 16px 18px; text-align: left; border-radius: 18px; border: 2px solid var(--line); background: var(--surface);
+  font-size: clamp(1.25rem, 2.3vw, 1.6rem); font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.tile:hover { border-color: var(--accent); }
+.tile:active { background: var(--accent-soft); }
+.tile.alert { border-color: var(--alert); background: var(--alert-soft); }
+.del { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--alert); background: var(--surface); color: var(--alert); font-weight: 700; font-size: 20px; line-height: 1; }
+.addrow { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.field { flex: 1 1 260px; min-width: 0; min-height: 56px; padding: 10px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); }
+textarea.field { min-height: 92px; resize: vertical; }
+.freebox { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+.freebox h2, .block h2 { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+
+/* chat */
+.thread { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.bubble { max-width: min(88%, 640px); padding: 12px 16px; border-radius: 18px; overflow-wrap: anywhere; font-size: 1.1rem; }
+.bubble.them { align-self: flex-start; background: var(--surface-2); border-bottom-left-radius: 4px; }
+.bubble.me { align-self: flex-end; background: var(--accent); color: var(--accent-fg); border-bottom-right-radius: 4px; font-weight: 700; }
+.bubble small { display: block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .75; margin-bottom: 2px; }
+.empty { color: var(--muted); padding: 18px; border: 2px dashed var(--line); border-radius: 14px; margin-bottom: 18px; }
+.quick { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 20px; }
+.quick .pill { min-height: 52px; }
+.sugg { display: grid; gap: 12px; }
+.sugg button { text-align: left; min-height: 88px; padding: 14px 18px; border-radius: 18px; border: 2px solid var(--accent); background: var(--surface); font-size: clamp(1.15rem, 2.2vw, 1.45rem); font-weight: 700; line-height: 1.3; }
+.sugg button:hover { background: var(--accent-soft); }
+.sugg button span { display: block; font-size: 13px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+/* life story */
+.block { margin-bottom: 30px; }
+.block h2.story { font-family: var(--font-story); text-transform: none; letter-spacing: 0; font-size: 1.7rem; color: var(--fg); font-weight: 600; margin-bottom: 12px; }
+.entries { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.entry { display: flex; gap: 10px; align-items: stretch; }
+.entry .say { flex: 1; min-width: 0; text-align: left; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); font-family: var(--font-story); font-size: 1.25rem; line-height: 1.35; font-weight: 500; overflow-wrap: anywhere; }
+.entry .say:hover { border-color: var(--accent); }
+.badge { display: inline-block; font-family: var(--font-ui); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; background: var(--surface-2); color: var(--muted); border-radius: 6px; padding: 1px 8px; margin-left: 8px; vertical-align: middle; }
+.rm { flex: none; width: 56px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--muted); font-size: 20px; }
+.rm:hover { border-color: var(--alert); color: var(--alert); }
+
+/* voice tab */
+.card { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 18px 20px; margin-bottom: 18px; }
+.card h2 { margin: 0 0 8px; font-size: 1.2rem; }
+.card p { margin: 0 0 10px; }
+.card ul { margin: 0; padding-left: 20px; }
+.row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.row label { min-width: 120px; font-weight: 700; }
+input[type="range"] { flex: 1 1 200px; min-width: 0; height: 44px; accent-color: var(--accent); }
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; }
+.steps li::before { content: counter(s); width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--fg); display: grid; place-items: center; font-weight: 700; }
+.state { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+/* sample import */
+.drop { position: relative; display: grid; place-items: center; min-height: 96px; margin: 12px 0; padding: 16px; border-radius: 16px; border: 2px dashed var(--accent); background: var(--accent-soft); font-weight: 700; font-size: 1.15rem; text-align: center; cursor: pointer; }
+.drop:hover { background: var(--surface-2); }
+.drop:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
+.drop input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.files { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 10px; }
+.files li { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); min-width: 0; }
+.files .meta { display: flex; gap: 10px 14px; flex-wrap: wrap; align-items: center; }
+.files .fname { font-weight: 700; overflow-wrap: anywhere; min-width: 0; flex: 1 1 200px; }
+.files audio { width: 100%; min-width: 0; }
+.verdict { padding: 12px 16px; border-radius: 12px; background: var(--accent-soft); margin: 0 0 12px; font-weight: 700; }
+.verdict.warn { background: var(--alert-soft); color: var(--fg); }
+
+/* voice pack */
+.status { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); margin: 4px 0 12px; }
+.status .dot { flex: none; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); }
+.status.ok .dot { background: var(--accent); }
+.status strong { display: block; font-size: 1.15rem; }
+.status div { min-width: 0; flex: 1 1 220px; }
+.meter { height: 12px; border-radius: 6px; background: var(--surface); overflow: hidden; margin-top: 8px; border: 1px solid var(--line); }
+.meter span { display: block; height: 100%; background: var(--accent); }
+details.missing { margin-top: 8px; }
+details.missing summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+details.missing ul { margin: 6px 0 0; padding-left: 20px; columns: 2 260px; column-gap: 28px; }
+details.missing li { break-inside: avoid; margin-bottom: 4px; }
+code.f { font-size: .92em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+
+/* tab bar */
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 8px max(16px, env(safe-area-inset-left, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)); }
+nav.tabs .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+nav.tabs a { display: grid; place-items: center; min-height: 64px; border-radius: 14px; text-decoration: none; color: var(--fg); font-weight: 700; font-size: 1.05rem; text-align: center; padding: 6px; }
+nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent-fg); }
+@media (max-width: 520px) { nav.tabs a { font-size: .95rem; } }
+@media (prefers-reduced-motion: no-preference) { .tile, .sugg button, .pill { transition: background .15s, border-color .15s; } }
+</style>
+
+<div class="speechbar" role="status" aria-live="polite">
+  <div class="wrap">
+    <div class="label">Papa dit <span class="src" id="src" hidden></span></div>
+    <div class="said idle" id="said">Touchez une phrase pour qu'elle soit prononcée.</div>
+    <div class="acts">
+      <button class="small-btn primary" id="again" hidden>Répéter</button>
+      <button class="small-btn" id="stop" hidden>Arrêter</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section class="view" id="v-parler">
+    <h1>Parler</h1>
+    <div class="pills" id="catPills" role="group" aria-label="Catégories"></div>
+    <div class="grid" id="tiles"></div>
+    <div class="addrow" id="addPhrase" hidden>
+      <input class="field" id="newPhrase" type="text" placeholder="Nouvelle phrase pour cette catégorie" aria-label="Nouvelle phrase">
+      <button class="small-btn primary" id="addPhraseBtn">Ajouter</button>
+    </div>
+    <div style="margin-top:16px"><button class="small-btn" id="editToggle" aria-pressed="false">Modifier les phrases</button></div>
+    <div class="freebox">
+      <h2>Phrase libre</h2>
+      <div class="addrow" style="margin-top:0">
+        <input class="field" id="free" type="text" placeholder="Écrire ce que je veux dire" aria-label="Phrase libre">
+        <button class="small-btn primary" id="freeSay">Dire</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-conversation" hidden>
+    <h1>Conversation</h1>
+    <p class="note">Prototype : on écrit ici ce que dit l'interlocuteur. Dans l'application finale, l'iPad l'écoute et le transcrit tout seul. Les propositions sont tirées de « Ma vie », choisies par mots-clés. Dans l'application finale, l'IA les rédigera à partir de ces mêmes dossiers.</p>
+    <div class="thread" id="thread"></div>
+    <div class="block">
+      <h2>Ce que dit mon interlocuteur</h2>
+      <textarea class="field" id="heard" style="width:100%" placeholder="Par exemple : Alors Papa, raconte-moi ton plus beau voyage ?" aria-label="Ce que dit l'interlocuteur"></textarea>
+      <div class="addrow" style="margin-top:10px">
+        <button class="small-btn primary" id="suggest">Proposer des réponses</button>
+        <button class="small-btn" id="clearThread">Effacer la conversation</button>
+      </div>
+    </div>
+    <div class="block">
+      <h2>Mes réponses possibles</h2>
+      <div class="sugg" id="sugg"><div class="empty">Les réponses proposées apparaîtront ici.</div></div>
+    </div>
+    <div class="block">
+      <h2>Réponses rapides</h2>
+      <div class="quick" id="quick"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-ma-vie" hidden>
+    <h1>Ma vie</h1>
+    <p class="note" id="exNote">Les phrases marquées « exemple » montrent le principe. Remplacez-les par les vrais souvenirs de papa, écrits comme lui les dirait, à la première personne. Touchez une phrase pour l'entendre.</p>
+    <div class="addrow" style="margin:0 0 22px"><button class="small-btn" id="rmExamples">Retirer tous les exemples</button></div>
+    <div id="lifeSections"></div>
+  </section>
+
+  <section class="view" id="v-voix" hidden>
+    <h1>Voix</h1>
+    <div class="card">
+      <h2>La voix de papa</h2>
+      <div class="status" id="packStatus"><span class="dot"></span><div><strong id="packTitle">Pas encore installée</strong><span id="packSub">Les phrases sont dites avec la voix de l'iPad.</span><div class="meter" id="packMeter" hidden><span id="packBar"></span></div></div></div>
+      <details class="missing" id="missing" hidden><summary id="missingSum"></summary><ul id="missingList"></ul></details>
+      <label class="drop" for="pack">
+        <input type="file" id="pack" accept=".zip,application/zip">
+        <span>Importer voix-de-papa.zip</span>
+      </label>
+      <div class="row"><span class="state" id="packState"></span></div>
+      <div class="row"><button class="small-btn" id="packClear" hidden>Retirer la voix de papa de cet iPad</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Créer ou mettre à jour la voix</h2>
+      <p>Le clonage se fait sur Google Colab, gratuitement, avec le modèle open source XTTS-v2. Comptez une demi-heure la première fois.</p>
+      <ol class="steps">
+        <li><div><strong>Exporter les phrases.</strong> Toutes les tuiles, les souvenirs de « Ma vie » et les réponses rapides. <div class="row" style="margin:8px 0 0"><button class="small-btn primary" id="exportBtn">Exporter mes phrases</button><span class="state" id="exportState"></span></div></div></li>
+        <li><div><strong>Ouvrir le carnet sur un ordinateur.</strong> Sur <code class="f">colab.research.google.com</code>, menu Fichier, Importer le notebook, puis choisir <code class="f">Voix_de_Papa.ipynb</code> (dossier <code class="f">outil</code> du projet Voix-SLA). Choisir un processeur GPU T4.</div></li>
+        <li><div><strong>Suivre le carnet.</strong> Envoyer l'enregistrement de papa, écouter les extraits retenus, essayer la voix, puis envoyer le fichier des phrases.</div></li>
+        <li><div><strong>Importer le résultat ici.</strong> Le carnet donne <code class="f">voix-de-papa.zip</code>. Importez-le ci-dessus. Les phrases sont alors dites avec la voix de papa, instantanément et même sans internet.</div></li>
+      </ol>
+      <p style="margin-top:12px">Après avoir ajouté des phrases ou des souvenirs, refaites les étapes 1, 3 et 4 : seules les nouvelles phrases sont générées.</p>
+    </div>
+
+    <div class="card">
+      <h2>Voix de secours</h2>
+      <p>Utilisée pour la phrase libre et pour les phrases que la voix de papa ne connaît pas encore.</p>
+      <div class="row"><label for="voiceSel">Voix</label><select class="field" id="voiceSel" style="flex:1 1 260px"></select></div>
+      <div class="row"><label for="rate">Vitesse</label><input type="range" id="rate" min="0.6" max="1.4" step="0.05" value="0.95"><span id="rateVal">0,95</span></div>
+      <div class="row"><button class="small-btn primary" id="testVoice">Écouter un exemple</button><span class="state" id="voiceState"></span></div>
+    </div>
+
+    <div class="card" id="importCard">
+      <h2>Vérifier l'enregistrement</h2>
+      <p>Avant de lancer le carnet, choisissez ici l'enregistrement de papa (m4a, mp3, wav, qta…) pour connaître sa durée. Le fichier reste sur cet appareil.</p>
+      <label class="drop" for="sample">
+        <input type="file" id="sample" multiple>
+        <span>Choisir un ou plusieurs fichiers audio</span>
+      </label>
+      <ul class="files" id="fileList"></ul>
+      <div class="verdict" id="verdict" hidden></div>
+      <p style="margin-top:14px"><strong>Pour un meilleur résultat</strong></p>
+      <ul>
+        <li>Sa voix seule, sans musique ni télévision derrière.</li>
+        <li>Peu d'écho, pas de voix d'autres personnes. Le carnet choisit les meilleurs passages, et vous pouvez en écarter.</li>
+        <li>S'il existe d'autres enregistrements (messages vocaux, vidéos de famille), ajoutez-les : plus la voix est variée, plus le clone est fidèle.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Sections"><div class="wrap">
+  <a href="#parler" data-tab="parler">Parler</a>
+  <a href="#conversation" data-tab="conversation">Conversation</a>
+  <a href="#ma-vie" data-tab="ma-vie">Ma vie</a>
+  <a href="#voix" data-tab="voix">Voix</a>
+</div></nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  var KEY = 'voix-de-papa-v1';
+  var CATS = [
+    { id: 'courant', label: 'Courant' }, { id: 'besoins', label: 'Besoins' }, { id: 'manger', label: 'Manger et boire' },
+    { id: 'douleur', label: 'Douleur' }, { id: 'confort', label: 'Confort' }, { id: 'loisirs', label: 'Loisirs' },
+    { id: 'famille', label: 'Famille' }, { id: 'urgence', label: 'Urgence', alert: true }
+  ];
+  var SECTIONS = [
+    { id: 'identite', label: 'Qui je suis', kw: ['qui', 'etes', 'presentez', 'parlez', 'histoire', 'vie', 'caractere', 'personne'] },
+    { id: 'famille', label: 'Ma famille', kw: ['enfant', 'enfants', 'petit', 'petits', 'fille', 'fils', 'femme', 'mari', 'famille', 'epouse', 'marie', 'papi', 'parents', 'frere', 'soeur'] },
+    { id: 'travail', label: 'Mon métier', kw: ['travail', 'travaille', 'metier', 'retraite', 'boulot', 'carriere', 'profession', 'faisiez', 'entreprise'] },
+    { id: 'voyages', label: 'Mes voyages', kw: ['voyage', 'voyager', 'vacances', 'pays', 'visite', 'vu', 'ete', 'partir', 'etranger', 'mer'] },
+    { id: 'reves', label: 'Mes rêves et mes projets', kw: ['reve', 'reves', 'envie', 'souhait', 'aimeriez', 'voudriez', 'projet', 'projets', 'espoir'] },
+    { id: 'dates', label: 'Les dates importantes', kw: ['quand', 'date', 'annee', 'ne', 'naissance', 'anniversaire', 'marie', 'mariage', 'souvenir'] },
+    { id: 'gouts', label: 'Ce que j\'aime', kw: ['aimez', 'aime', 'musique', 'plat', 'cuisine', 'loisir', 'loisirs', 'passion', 'hobby', 'manger', 'favori', 'prefere', 'humour'] }
+  ];
+  var DEFAULT_PHRASES = {
+    courant: ['Bonjour !', 'Merci beaucoup.', 'Oui.', 'Non.', 'Un instant, s\'il vous plaît.', 'Pouvez-vous répéter ?', 'Je ne suis pas d\'accord.', 'Au revoir, à bientôt.'],
+    besoins: ['J\'ai besoin d\'aide, s\'il vous plaît.', 'Je voudrais aller aux toilettes.', 'J\'ai besoin de me reposer.', 'Je suis fatigué.', 'Je voudrais me laver.', 'Pouvez-vous m\'aider à m\'asseoir ?'],
+    manger: ['J\'ai faim.', 'J\'ai soif.', 'Un verre d\'eau, s\'il vous plaît.', 'Je voudrais un café.', 'C\'est délicieux, merci.', 'Je n\'ai plus faim.'],
+    douleur: ['J\'ai mal.', 'J\'ai mal à la tête.', 'J\'ai mal au dos.', 'Ça fait mal ici.', 'La douleur est forte.', 'Ça va un peu mieux.'],
+    confort: ['J\'ai froid.', 'J\'ai chaud.', 'Pouvez-vous changer ma position ?', 'Allumez la lumière, s\'il vous plaît.', 'Éteignez la lumière, s\'il vous plaît.', 'Ouvrez la fenêtre, s\'il vous plaît.'],
+    loisirs: ['J\'aimerais regarder la télévision.', 'Mettez de la musique, s\'il vous plaît.', 'Je voudrais lire un peu.', 'On joue aux cartes ?', 'Allons prendre l\'air.', 'Appelez-moi quelqu\'un de la famille.'],
+    famille: ['Je vous aime.', 'Merci d\'être là.', 'Je suis fier de vous.', 'Venez me faire un câlin.', 'Comment vont les enfants ?', 'Raconte-moi ta journée.'],
+    urgence: ['J\'ai du mal à respirer.', 'Appelez les secours.', 'Appelez ma famille tout de suite.', 'Je m\'étouffe.', 'Ça ne va pas du tout.']
+  };
+  var EX = function (t) { return { t: t, ex: true }; };
+  var DEFAULT_LIFE = {
+    identite: [EX('Je suis un homme simple, curieux et un peu têtu, à ce qu\'on dit.')],
+    famille: [EX('J\'ai trois enfants et quatre petits-enfants, ils sont ma plus grande fierté.'), EX('Je suis marié depuis plus de quarante ans avec la femme de ma vie.'), EX('Mes petits-enfants m\'appellent Papi.')],
+    travail: [EX('J\'ai travaillé trente ans comme artisan, j\'aimais le travail bien fait.'), EX('J\'ai pris ma retraite avec le sentiment du devoir accompli.')],
+    voyages: [EX('J\'ai adoré voyager en Italie, surtout la Toscane en été.'), EX('Mon plus beau voyage, c\'était en famille en Écosse.')],
+    reves: [EX('Je rêve de voir toute ma famille réunie autour d\'une grande table.'), EX('J\'aimerais retourner une dernière fois au bord de la mer.')],
+    dates: [EX('Je me suis marié en juin 1982.'), EX('Mon premier petit-enfant est né en 2012.')],
+    gouts: [EX('J\'aime la chanson française et le café noir bien serré.'), EX('J\'adore plaisanter, il faut garder le sourire.'), EX('Mon plat préféré, c\'est le poisson grillé.')]
+  };
+  var QUICK = ['Oui.', 'Non.', 'Peut-être.', 'Merci.', 'Pouvez-vous répéter, s\'il vous plaît ?', 'Un instant, je réfléchis.', 'Je suis content de vous voir.'];
+  var INTENTS = [
+    { re: /\b(bonjour|salut|coucou|bonsoir)\b/, out: ['Bonjour ! Je suis content de vous voir.', 'Bonjour, comment allez-vous ?'] },
+    { re: /\b(comment (allez|vas|te sens|vous sentez)|ca va|la forme)\b/, out: ['Ça va, merci. Et vous ?', 'Je suis fatigué aujourd\'hui, mais content que vous soyez là.', 'J\'ai un peu mal aujourd\'hui.'] },
+    { re: /\b(mal|douleur|souffr)/, out: ['J\'ai mal ici, regardez.', 'La douleur est supportable pour le moment.', 'Oui, j\'ai besoin qu\'on m\'aide.'] },
+    { re: /\b(faim|soif|manger|boire|cafe|repas)\b/, out: ['Oui, avec plaisir.', 'Non merci, pas maintenant.', 'Un verre d\'eau, s\'il vous plaît.'] },
+    { re: /\b(merci)\b/, out: ['Avec plaisir.', 'C\'est normal, entre nous.'] }
+  ];
+
+  function $(s) { return document.querySelector(s); }
+  function h(tag, props) {
+    var e = document.createElement(tag); props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (k === 'class') e.className = v;
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, '');
+      else if (v !== false && v != null) e.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i]; if (c == null) continue;
+      (Array.isArray(c) ? c : [c]).forEach(function (x) { e.append(x instanceof Node ? x : document.createTextNode(x)); });
+    }
+    return e;
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  var S = null;
+  try { S = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { S = null; }
+  if (!S || !S.phrases || !S.life) S = { phrases: clone(DEFAULT_PHRASES), life: clone(DEFAULT_LIFE), rate: 0.95, voice: '' };
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} if (typeof renderPack === 'function') try { renderPack(); } catch (e) {} }
+
+  /* ---------- voix de papa : pack audio généré par le carnet Colab ---------- */
+  // Même règle que cle() dans outil/voix_papa.py
+  function cle(t) { return String(t).normalize('NFC').replace(/[\u2018\u2019]/g, "'").replace(/\u00a0/g, ' ').split(/\s+/).filter(Boolean).join(' ').toLowerCase(); }
+  var pack = { urls: {}, count: 0 };
+  var DB_NAME = 'voix-de-papa-audio';
+  function openDb() {
+    return new Promise(function (res, rej) {
+      try {
+        var r = indexedDB.open(DB_NAME, 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore('phrases'); };
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { rej(r.error); };
+      } catch (e) { rej(e); }
+    });
+  }
+  function dbAll() {
+    return openDb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var out = {}, tx = db.transaction('phrases', 'readonly'), st = tx.objectStore('phrases');
+        var c = st.openCursor();
+        c.onsuccess = function () { var cur = c.result; if (cur) { out[cur.key] = cur.value; cur.continue(); } };
+        tx.oncomplete = function () { res(out); };
+        tx.onerror = function () { rej(tx.error); };
+      });
+    });
+  }
+  function dbReplace(entries) {
+    return openDb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction('phrases', 'readwrite'), st = tx.objectStore('phrases');
+        st.clear();
+        Object.keys(entries).forEach(function (k) { st.put(entries[k], k); });
+        tx.oncomplete = function () { res(); };
+        tx.onerror = function () { rej(tx.error); };
+      });
+    });
+  }
+  function setPack(blobs) {
+    Object.keys(pack.urls).forEach(function (k) { try { URL.revokeObjectURL(pack.urls[k]); } catch (e) {} });
+    pack.urls = {}; pack.count = 0;
+    Object.keys(blobs).forEach(function (k) { pack.urls[k] = URL.createObjectURL(blobs[k]); pack.count++; });
+    renderPack();
+  }
+
+  /* ---------- speech ---------- */
+  var synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
+  var voices = [];
+  var lastText = '';
+  var saidEl = $('#said'), againBtn = $('#again'), stopBtn = $('#stop');
+  function loadVoices() {
+    if (!synth) return;
+    voices = synth.getVoices().filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf('fr') === 0; });
+    renderVoiceSelect();
+  }
+  var player = new Audio();
+  var srcEl = $('#src');
+  function showSrc(papa) { srcEl.hidden = false; srcEl.className = 'src' + (papa ? ' papa' : ''); srcEl.textContent = papa ? 'voix de papa' : 'voix de l\'iPad'; }
+  function stopAll() { try { player.pause(); } catch (e) {} if (synth) { try { synth.cancel(); } catch (e) {} } }
+  function speak(text) {
+    lastText = text;
+    saidEl.textContent = text; saidEl.classList.remove('idle');
+    againBtn.hidden = false;
+    stopAll();
+    var url = pack.urls[cle(text)];
+    if (url) {
+      stopBtn.hidden = false; showSrc(true);
+      player.src = url; player.currentTime = 0;
+      var pr = player.play();
+      if (pr && pr.catch) pr.catch(function () {});
+      return;
+    }
+    stopBtn.hidden = !synth; showSrc(false);
+    if (!synth) return;
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'fr-FR'; u.rate = S.rate || 0.95;
+      var v = voices.filter(function (x) { return x.name === S.voice; })[0] || voices[0];
+      if (v) u.voice = v;
+      synth.speak(u);
+    } catch (e) {}
+  }
+  againBtn.addEventListener('click', function () { if (lastText) speak(lastText); });
+  stopBtn.addEventListener('click', stopAll);
+  if (synth) { loadVoices(); synth.onvoiceschanged = loadVoices; }
+
+  /* ---------- Parler ---------- */
+  var cat = 'courant', editing = false;
+  function renderPills() {
+    var box = $('#catPills'); box.textContent = '';
+    CATS.forEach(function (c) {
+      box.append(h('button', { class: 'pill' + (c.alert ? ' alert' : ''), 'aria-pressed': String(c.id === cat), onclick: function () { cat = c.id; renderPills(); renderTiles(); } }, c.label));
+    });
+  }
+  function renderTiles() {
+    var box = $('#tiles'); box.textContent = '';
+    var list = S.phrases[cat] || [];
+    var alert = cat === 'urgence';
+    list.forEach(function (p, i) {
+      var w = h('div', { class: 'tile-wrap' }, h('button', { class: 'tile' + (alert ? ' alert' : ''), onclick: function () { speak(p); } }, p));
+      if (editing) w.append(h('button', { class: 'del', 'aria-label': 'Supprimer : ' + p, onclick: function () { list.splice(i, 1); save(); renderTiles(); } }, '×'));
+      box.append(w);
+    });
+    if (!list.length) box.append(h('div', { class: 'empty' }, 'Cette catégorie est vide. Touchez « Modifier les phrases » pour en ajouter.'));
+    $('#addPhrase').hidden = !editing;
+    var t = $('#editToggle'); t.textContent = editing ? 'Terminer' : 'Modifier les phrases'; t.setAttribute('aria-pressed', String(editing));
+  }
+  $('#editToggle').addEventListener('click', function () { editing = !editing; renderTiles(); });
+  function addPhrase() {
+    var inp = $('#newPhrase'), v = inp.value.trim(); if (!v) return;
+    S.phrases[cat].push(v); inp.value = ''; save(); renderTiles();
+  }
+  $('#addPhraseBtn').addEventListener('click', addPhrase);
+  $('#newPhrase').addEventListener('keydown', function (e) { if (e.key === 'Enter') addPhrase(); });
+  function freeSay() { var i = $('#free'), v = i.value.trim(); if (!v) return; speak(v); i.value = ''; }
+  $('#freeSay').addEventListener('click', freeSay);
+  $('#free').addEventListener('keydown', function (e) { if (e.key === 'Enter') freeSay(); });
+
+  /* ---------- Conversation ---------- */
+  var thread = [];
+  function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9' ]/g, ' '); }
+  function words(s) { return norm(s).split(/[\s']+/).filter(function (w) { return w.length > 3; }); }
+  function suggestFor(question) {
+    var q = norm(question), qw = words(question), out = [], seen = {};
+    function push(text, src) { if (!seen[text] && out.length < 6) { seen[text] = 1; out.push({ text: text, src: src }); } }
+    INTENTS.forEach(function (it) { if (it.re.test(q)) it.out.forEach(function (t) { push(t, 'Réponse courante'); }); });
+    var scored = [];
+    SECTIONS.forEach(function (sec) {
+      var secHit = sec.kw.reduce(function (n, k) { return n + (new RegExp('\\b' + k + '\\b').test(q) ? 1 : 0); }, 0);
+      (S.life[sec.id] || []).forEach(function (e) {
+        var ew = words(e.t), overlap = qw.filter(function (w) { return ew.indexOf(w) >= 0; }).length;
+        var score = secHit * 3 + overlap;
+        if (score > 0) scored.push({ text: e.t, src: sec.label, score: score });
+      });
+    });
+    scored.sort(function (a, b) { return b.score - a.score; }).slice(0, 4).forEach(function (s) { push(s.text, s.src); });
+    if (!out.length) {
+      (S.life.identite || []).slice(0, 2).forEach(function (e) { push(e.t, 'Qui je suis'); });
+      push('Pouvez-vous préciser votre question ?', 'Réponse courante');
+    }
+    return out;
+  }
+  function renderThread() {
+    var box = $('#thread'); box.textContent = '';
+    if (!thread.length) { box.append(h('div', { class: 'empty' }, 'La conversation apparaîtra ici.')); return; }
+    thread.forEach(function (m) { box.append(h('div', { class: 'bubble ' + m.who }, h('small', {}, m.who === 'me' ? 'Papa' : 'Interlocuteur'), m.text)); });
+  }
+  function reply(text) { speak(text); thread.push({ who: 'me', text: text }); renderThread(); renderSugg([]); }
+  function renderSugg(list) {
+    var box = $('#sugg'); box.textContent = '';
+    if (!list.length) { box.append(h('div', { class: 'empty' }, 'Les réponses proposées apparaîtront ici.')); return; }
+    list.forEach(function (s) { box.append(h('button', { onclick: function () { reply(s.text); } }, s.text, h('span', {}, s.src))); });
+  }
+  $('#suggest').addEventListener('click', function () {
+    var i = $('#heard'), v = i.value.trim(); if (!v) return;
+    thread.push({ who: 'them', text: v }); i.value = ''; renderThread(); renderSugg(suggestFor(v));
+  });
+  $('#clearThread').addEventListener('click', function () { thread = []; renderThread(); renderSugg([]); });
+  QUICK.forEach(function (t) { $('#quick').append(h('button', { class: 'pill', onclick: function () { reply(t); } }, t)); });
+
+  /* ---------- Ma vie ---------- */
+  function renderLife() {
+    var box = $('#lifeSections'); box.textContent = '';
+    var anyEx = false;
+    SECTIONS.forEach(function (sec) {
+      var list = S.life[sec.id] = S.life[sec.id] || [];
+      var ul = h('ul', { class: 'entries' });
+      list.forEach(function (e, i) {
+        if (e.ex) anyEx = true;
+        ul.append(h('li', { class: 'entry' },
+          h('button', { class: 'say', onclick: function () { speak(e.t); } }, e.t, e.ex ? h('span', { class: 'badge' }, 'exemple') : null),
+          h('button', { class: 'rm', 'aria-label': 'Supprimer cette phrase', onclick: function () { list.splice(i, 1); save(); renderLife(); } }, '×')));
+      });
+      if (!list.length) ul.append(h('li', { class: 'empty' }, 'Rien encore. Ajoutez un souvenir ci-dessous.'));
+      var inp = h('input', { class: 'field', type: 'text', id: 'add-' + sec.id, placeholder: 'Ajouter un souvenir, à la première personne', 'aria-label': 'Ajouter dans ' + sec.label });
+      function add() { var v = inp.value.trim(); if (!v) return; list.push({ t: v }); save(); renderLife(); }
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
+      box.append(h('div', { class: 'block' }, h('h2', { class: 'story' }, sec.label), ul, h('div', { class: 'addrow' }, inp, h('button', { class: 'small-btn primary', onclick: add }, 'Ajouter'))));
+    });
+    $('#rmExamples').hidden = !anyEx; $('#exNote').hidden = !anyEx;
+  }
+  $('#rmExamples').addEventListener('click', function () {
+    SECTIONS.forEach(function (s) { S.life[s.id] = (S.life[s.id] || []).filter(function (e) { return !e.ex; }); });
+    save(); renderLife();
+  });
+
+  /* ---------- Voix ---------- */
+  function renderVoiceSelect() {
+    var sel = $('#voiceSel'); if (!sel) return; sel.textContent = '';
+    if (!voices.length) { sel.append(h('option', {}, synth ? 'Aucune voix française trouvée' : 'Synthèse vocale indisponible ici')); $('#voiceState').textContent = synth ? '' : 'Le texte s\'affiche sans être prononcé.'; return; }
+    voices.forEach(function (v) { sel.append(h('option', { value: v.name, selected: v.name === S.voice }, v.name + ' (' + v.lang + ')')); });
+    $('#voiceState').textContent = '';
+  }
+  $('#voiceSel').addEventListener('change', function (e) { S.voice = e.target.value; save(); });
+  var rate = $('#rate'); rate.value = S.rate || 0.95;
+  function showRate() { $('#rateVal').textContent = String(Number(rate.value).toFixed(2)).replace('.', ','); }
+  rate.addEventListener('input', function () { S.rate = Number(rate.value); showRate(); save(); });
+  showRate();
+  $('#testVoice').addEventListener('click', function () { speak('Bonjour, c\'est moi. Je suis content de vous voir.'); });
+  renderVoiceSelect();
+
+  /* ---------- import de l'échantillon ---------- */
+  var samples = [];
+  var sampleEl = $('#sample');
+  function fmtDur(s) { var m = Math.floor(s / 60), r = Math.round(s % 60); if (r === 60) { m++; r = 0; } return m + ' min ' + (r < 10 ? '0' : '') + r + ' s'; }
+  function fmtSize(b) { return b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' Mo' : Math.max(1, Math.round(b / 1024)) + ' Ko'; }
+  function renderSamples() {
+    var ul = $('#fileList'); ul.textContent = '';
+    var total = 0, unknown = 0;
+    samples.forEach(function (s, i) {
+      if (s.dur != null) total += s.dur; else if (!s.err) unknown++;
+      var durTxt = s.err ? 'durée illisible' : (s.dur != null ? fmtDur(s.dur) : 'calcul de la durée…');
+      var li = h('li', {},
+        h('div', { class: 'meta' }, h('span', { class: 'fname' }, s.name), h('span', { class: 'state' }, fmtSize(s.size) + ' · ' + durTxt),
+          h('button', { class: 'small-btn', 'aria-label': 'Retirer ' + s.name, onclick: function () { if (s.url) { try { URL.revokeObjectURL(s.url); } catch (e) {} } samples.splice(i, 1); renderSamples(); } }, 'Retirer')));
+      if (s.url && !s.err) li.append(h('audio', { controls: true, preload: 'metadata', src: s.url }));
+      if (s.err) li.append(h('div', { class: 'state' }, 'Le fichier est bien reçu, mais ce navigateur ne sait pas le lire ni mesurer sa durée. Ce n\'est pas bloquant : le service de clonage acceptera sans doute ce format, sinon il suffira de le convertir en m4a ou mp3.'));
+      ul.append(li);
+    });
+    var v = $('#verdict');
+    if (!samples.length) { v.hidden = true; } else if (unknown) { v.hidden = false; v.className = 'verdict'; v.textContent = 'Calcul de la durée totale…'; }
+    else {
+      v.hidden = false;
+      if (total < 60) { v.className = 'verdict warn'; v.textContent = 'Durée totale ' + fmtDur(total) + '. C\'est trop court pour un bon clone : visez au moins quelques minutes de voix claire.'; }
+      else if (total < 300) { v.className = 'verdict'; v.textContent = 'Durée totale ' + fmtDur(total) + '. Un clone est possible, mais il sera moins fidèle qu\'avec un enregistrement plus long.'; }
+      else { v.className = 'verdict'; v.textContent = 'Durée totale ' + fmtDur(total) + '. C\'est suffisant pour un premier essai de clonage.'; }
+    }
+  }
+  sampleEl.addEventListener('change', function () {
+    Array.prototype.forEach.call(sampleEl.files, function (f) {
+      var item = { name: f.name, size: f.size, dur: null, url: null, err: false };
+      try { item.url = URL.createObjectURL(f); } catch (e) { item.err = true; }
+      samples.push(item);
+      if (item.url) {
+        var a = new Audio(); a.preload = 'metadata';
+        a.onloadedmetadata = function () { item.dur = isFinite(a.duration) ? a.duration : null; if (item.dur == null) item.err = true; renderSamples(); };
+        a.onerror = function () { item.err = true; renderSamples(); };
+        a.src = item.url;
+      }
+    });
+    sampleEl.value = ''; renderSamples();
+  });
+
+  /* ---------- pack : import, couverture, export des phrases ---------- */
+  function allTexts() {
+    var out = [], seen = {};
+    function add(t) { var k = cle(t); if (t && !seen[k]) { seen[k] = 1; out.push(t); } }
+    CATS.forEach(function (c) { (S.phrases[c.id] || []).forEach(add); });
+    SECTIONS.forEach(function (sec) { (S.life[sec.id] || []).forEach(function (e) { add(e.t); }); });
+    QUICK.forEach(add);
+    INTENTS.forEach(function (it) { it.out.forEach(add); });
+    add('Pouvez-vous préciser votre question ?');
+    add('Bonjour, c\'est moi. Je suis content de vous voir.');
+    return out;
+  }
+  function renderPack() {
+    var texts = allTexts(), miss = texts.filter(function (t) { return !pack.urls[cle(t)]; });
+    var st = $('#packStatus'), has = pack.count > 0;
+    st.className = 'status' + (has ? ' ok' : '');
+    $('#packTitle').textContent = has ? 'Installée sur cet iPad' : 'Pas encore installée';
+    $('#packSub').textContent = has
+      ? (texts.length - miss.length) + ' phrases sur ' + texts.length + ' sont dites avec la voix de papa.'
+      : 'Les phrases sont dites avec la voix de l\'iPad.';
+    $('#packMeter').hidden = !has;
+    $('#packBar').style.width = (texts.length ? Math.round(100 * (texts.length - miss.length) / texts.length) : 0) + '%';
+    $('#packClear').hidden = !has;
+    var d = $('#missing'); d.hidden = !has || !miss.length;
+    if (has && miss.length) {
+      $('#missingSum').textContent = miss.length + ' phrase' + (miss.length > 1 ? 's' : '') + ' sans la voix de papa';
+      var ul = $('#missingList'); ul.textContent = '';
+      miss.forEach(function (t) { ul.append(h('li', {}, t)); });
+    }
+  }
+  $('#pack').addEventListener('change', function (ev) {
+    var f = ev.target.files && ev.target.files[0], st = $('#packState');
+    ev.target.value = '';
+    if (!f) return;
+    if (!window.JSZip) { st.textContent = 'Impossible de lire le fichier : la bibliothèque zip n\'a pas pu se charger. Vérifiez la connexion et rechargez la page.'; return; }
+    st.textContent = 'Lecture de ' + f.name + '…';
+    JSZip.loadAsync(f).then(function (zip) {
+      var m = zip.file('manifest.json');
+      if (!m) throw new Error('Ce fichier n\'est pas un pack de la voix de papa (manifest.json absent).');
+      return m.async('string').then(function (txt) {
+        var man = JSON.parse(txt), blobs = {};
+        if (man.format !== 'voix-de-papa' || !Array.isArray(man.phrases)) throw new Error('Format de pack inconnu.');
+        return Promise.all(man.phrases.map(function (e) {
+          var zf = zip.file(e.fichier); if (!zf) return null;
+          return zf.async('arraybuffer').then(function (buf) { blobs[cle(e.texte)] = new Blob([buf], { type: 'audio/mpeg' }); });
+        })).then(function () { return blobs; });
+      });
+    }).then(function (blobs) {
+      var n = Object.keys(blobs).length;
+      if (!n) throw new Error('Le pack ne contient aucune phrase.');
+      setPack(blobs);
+      st.textContent = n + ' phrases importées.';
+      return dbReplace(blobs).catch(function () {
+        st.textContent = n + ' phrases importées pour cette visite. Cet iPad n\'a pas permis de les garder : il faudra réimporter le fichier la prochaine fois.';
+      });
+    }).catch(function (e) { st.textContent = 'Import impossible : ' + (e && e.message ? e.message : 'fichier illisible') + '.'; });
+  });
+  var clearArmed = false;
+  $('#packClear').addEventListener('click', function () {
+    var b = $('#packClear');
+    if (!clearArmed) { clearArmed = true; b.textContent = 'Confirmer : retirer la voix de papa'; setTimeout(function () { clearArmed = false; b.textContent = 'Retirer la voix de papa de cet iPad'; }, 5000); return; }
+    clearArmed = false; b.textContent = 'Retirer la voix de papa de cet iPad';
+    setPack({}); dbReplace({}).catch(function () {});
+    $('#packState').textContent = 'Voix de papa retirée. Le fichier zip peut être réimporté à tout moment.';
+  });
+
+  function getDownloads() { try { return (window.claude && window.claude.use) ? window.claude.use('downloads') : Promise.resolve(null); } catch (e) { return Promise.resolve(null); } }
+  $('#exportBtn').addEventListener('click', function () {
+    var st = $('#exportState');
+    var data = JSON.stringify({ format: 'voix-de-papa-phrases', version: 1, textes: allTexts() }, null, 1);
+    getDownloads().then(function (dl) {
+      if (!dl) throw { code: 'unavailable' };
+      return dl.save({ filename: 'phrases-voix-de-papa.json', data: data }).then(function () {
+        st.textContent = allTexts().length + ' phrases exportées dans phrases-voix-de-papa.json.';
+      });
+    }).catch(function (e) {
+      if (e && e.code === 'declined') { st.textContent = 'Export annulé.'; return; }
+      st.textContent = 'L\'enregistrement du fichier n\'est pas possible dans cette vue. Ouvrez la page dans claude.ai ou dans l\'application Claude.';
+    });
+  });
+
+  /* ---------- tabs ---------- */
+  var TABS = ['parler', 'conversation', 'ma-vie', 'voix'];
+  function route() {
+    var t = location.hash.replace('#', ''); if (TABS.indexOf(t) < 0) t = 'parler';
+    TABS.forEach(function (id) { $('#v-' + id).hidden = id !== t; });
+    document.querySelectorAll('nav.tabs a').forEach(function (a) { if (a.dataset.tab === t) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+
+  renderPills(); renderTiles(); renderThread(); renderLife(); renderPack(); route();
+  dbAll().then(function (blobs) { if (Object.keys(blobs).length) setPack(blobs); }).catch(function () {});
+})();
+</script>
+
