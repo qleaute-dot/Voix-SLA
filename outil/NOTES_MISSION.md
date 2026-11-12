@@ -41,3 +41,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - App : note de 1 à 5 après « Bon » (avis.etoiles), à publier avec la série.
 - 18:16 UTC Perte de test : 3,50 (ép. 5) puis 3,55 / 3,56 / 3,64 (ép. 6-8) → surapprentissage.
   Entraînement arrêté ; l'époque 5 (sauvegardée) est la meilleure. Évaluation base vs ép. 5.
+- 19:45 UTC Mesures sur 5 phrases jamais entendues : base sim 68 / mots faux 23 % ;
+  ft ép. 5 sim 73 / mots faux 7 % (sa vraie voix ≈ 79). Série Comparer « ft5 » publiée :
+  71 phrases (5 jamais entendues en tête), meilleure de 2 prises par phrase.
