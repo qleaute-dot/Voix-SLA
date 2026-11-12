@@ -262,10 +262,13 @@ class Voix:
         return cls(d["gpt"].to(dev), d["spk"].to(dev), modele)
 
     def dire(self, texte: str, temperature: float = 0.65, vitesse: float = 1.0) -> np.ndarray:
-        out = self.modele.inference(
-            texte, LANGUE, self.gpt_latent, self.speaker_emb,
-            temperature=temperature, repetition_penalty=5.0, top_p=0.85,
-            speed=vitesse, enable_text_splitting=len(texte) > 180)
+        kw = dict(temperature=temperature, repetition_penalty=5.0, top_p=0.85, speed=vitesse)
+        try:
+            out = self.modele.inference(texte, LANGUE, self.gpt_latent, self.speaker_emb,
+                                        enable_text_splitting=len(texte) > 250, **kw)
+        except ImportError:  # découpage en phrases indisponible (spacy absent)
+            out = self.modele.inference(texte, LANGUE, self.gpt_latent, self.speaker_emb,
+                                        enable_text_splitting=False, **kw)
         wav = np.asarray(out["wav"], dtype="float32")
         pic = np.abs(wav).max() or 1.0
         return wav / pic * 0.89
