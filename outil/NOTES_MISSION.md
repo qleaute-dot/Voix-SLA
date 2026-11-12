@@ -69,3 +69,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   (4 phrases) à côté de « ta voix telle quelle » et de la vraie voix.
 - 23:10 UTC Avis : Seed-VC au vol 4/4 « pas bon » (accent « anglais », timbre faux) → abandonné.
   Tout le processeur à Applio ; Qwen +14 phrases en priorité basse (pour Qwen + Applio).
+- 23:30 UTC Pause d'Applio pour Qwen : manque de mémoire, les deux tués (-9), aucune
+  sauvegarde Applio perdue (aucune encore). Relancé seul (rvc3.log), sauvegarde toutes les
+  10 époques, ≈ 4,5 min/époque ; swap 5 Go. rvc_watch.sh convertit à chaque sauvegarde.
+  Leçon : ne rien faire tourner en parallèle d'Applio sur cette machine.
