@@ -875,6 +875,10 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   function renderTrials(man) {
     var box = $('#trials'); box.textContent = '';
     if (man.intro) $('#trialIntro').textContent = man.intro;
+    if (man.original) {
+      box.append(h('div', { class: 'trial' }, h('h3', {}, man.original.nom), man.original.note ? h('span', { class: 'state' }, man.original.note) : null,
+        h('div', { class: 'lines' }, h('button', { onclick: function () { stopAll(); player.src = 'essais/' + man.original.fichier; player.play().catch(function () {}); saidEl.classList.remove('idle'); saidEl.textContent = 'Extrait de l\'enregistrement'; showSrc('vrai'); stopBtn.hidden = false; againBtn.hidden = true; } }, '▶ Écouter sa vraie voix'))));
+    }
     man.versions.forEach(function (v) {
       var lines = h('div', { class: 'lines' });
       v.essais.forEach(function (e) {
