@@ -988,7 +988,8 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       var card = h('div', { class: 'pair' + (a.note ? ' ' + a.note : '') + (a.etoiles >= 4 ? ' top' : '') },
         h('div', { class: 'ptxt' }, '« ' + p.texte + ' »'),
         h('div', { class: 'plays' },
-          h('button', { class: 'real', onclick: function () { playUrl('comparer/' + p.vrai, p.texte, 'vrai'); } }, '▶ Sa vraie voix'),
+          p.vrai ? h('button', { class: 'real', onclick: function () { playUrl('comparer/' + p.vrai, p.texte, 'vrai'); } }, '▶ Sa vraie voix')
+                 : h('span', { class: 'meta2', style: 'flex:1 1 150px;align-self:center' }, 'Pas d\'enregistrement original de cette phrase'),
           h('button', { onclick: function () { playUrl('comparer/' + p.clone, p.texte, true); } }, '▶ Le clone')),
         h('div', { class: 'votes' },
           h('button', { class: 'ok', 'aria-pressed': String(a.note === 'bon'), onclick: function () { saveAvis(p, { note: 'bon', defauts: [] }); } }, 'Bon' + (a.etoiles ? ' · ' + a.etoiles + '/5' : '')),

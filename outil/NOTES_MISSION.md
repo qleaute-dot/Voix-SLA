@@ -58,3 +58,9 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Qwen3-TTS au vol, 5 phrases test : mots ≈ parfaits (WER moy. 6 %), timbre faible (sim 0,56).
   Publié dans Comparer (version « qz ») pour jugement de l'accent.
   Suite : à chaque sauvegarde RVC, convertir Qwen + ft5 (pipe/rvc_conv.py) et mesurer.
+- 22:35 UTC Voix du fils reçue (6 phrases, 28 s ; 3 identiques à des phrases de papa).
+  F0 médiane : papa 127 Hz, fils 133 Hz (−1 demi-ton), Qwen 146 Hz (−2).
+  Seed-VC installé (autorisé par l'utilisateur), référence papa 25 s (seed_ref.wav).
+  Chaîne de nuit : pipe/nuit_queue.sh (Seed-VC fils → Seed-VC Qwen → Qwen +14 phrases →
+  Seed-VC), pipe/rvc_watch.sh (à chaque sauvegarde Applio : rvc_test.sh → rvcout/eNN).
+  Matin : pipe/panel.py (mesure toutes les variantes, construit Comparer, meilleures en tête).
