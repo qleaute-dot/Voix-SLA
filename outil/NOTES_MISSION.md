@@ -25,3 +25,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 
 ## Journal
 - 15:50 UTC transcription lancée.
+- Demande ajoutée : après validation de la voix principale, essayer une voix
+  légère (Piper / sherpa-onnx en WASM) entraînée sur papa, pour la phrase libre
+  en temps réel dans l'iPad.
