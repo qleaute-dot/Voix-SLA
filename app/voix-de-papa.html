@@ -175,6 +175,10 @@ details.missing li { break-inside: avoid; margin-bottom: 4px; }
 .pair .votes .ko[aria-pressed="true"] { background: var(--alert); color: var(--surface); border-color: var(--alert); }
 .pair .tags button { min-height: 44px; padding: 4px 14px; border-radius: 22px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; font-size: .95rem; }
 .pair .tags button[aria-pressed="true"] { border-color: var(--alert); background: var(--alert-soft); }
+.pair.top { border-width: 3px; box-shadow: 0 0 0 2px var(--accent-soft); }
+.pair .stars { display: flex; gap: 8px; }
+.pair .stars button { flex: 1 1 0; min-width: 0; min-height: 52px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; font-size: 1.15rem; }
+.pair .stars button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .pair .meta2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 code.f { font-size: .92em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
 
@@ -925,12 +929,12 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     }).catch(function () { st.hidden = false; st.textContent = 'Choix impossible dans cette vue. Ouvrez l\'application dans claude.ai.'; });
   }
   // Comparaisons « vraie voix / clone » : comparer/manifest.json ; avis dans db avis/<id>
-  var cmp = { man: null, avis: {}, showAll: false, shown: 10 };
+  var cmp = { man: null, avis: {}, showAll: false, shown: 10, touched: {} };
   var TAGS = ['Accent', 'Timbre', 'Rythme', 'Intonation', 'Mot déformé', 'Bruit, son métallique'];
   function playUrl(url, label, papa) { stopAll(); player.src = url; player.play().catch(function () {}); saidEl.classList.remove('idle'); saidEl.textContent = label; showSrc(papa); stopBtn.hidden = false; againBtn.hidden = true; }
   function saveAvis(p, patch) {
     var a = Object.assign({}, cmp.avis[p.id] || {}, patch, { version: p.version, texte: p.texte, date: new Date().toISOString() });
-    cmp.avis[p.id] = a; renderCmp();
+    cmp.avis[p.id] = a; cmp.touched[p.id] = true; renderCmp();
     cap('db').then(function (db) { if (!db) throw 0; return db.collection('avis').doc(p.id).set(a); })
       .catch(function () { $('#cmpCount').textContent = 'Avis non enregistré : ouvrez l\'application dans claude.ai.'; });
   }
@@ -938,18 +942,27 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     var box = $('#cmpList'); box.textContent = '';
     var all = cmp.man.paires, done = all.filter(function (p) { return cmp.avis[p.id] && cmp.avis[p.id].note; });
     var bons = done.filter(function (p) { return cmp.avis[p.id].note === 'bon'; }).length;
-    $('#cmpCount').textContent = done.length + ' sur ' + all.length + ' notées · ' + bons + ' bonne' + (bons > 1 ? 's' : '');
-    var list = cmp.showAll ? all : all.filter(function (p) { return !(cmp.avis[p.id] && cmp.avis[p.id].note); });
+    var notes = done.map(function (p) { return cmp.avis[p.id].etoiles; }).filter(function (n) { return n; });
+    var moy = notes.length ? (notes.reduce(function (x, y) { return x + y; }, 0) / notes.length).toFixed(1).replace('.', ',') : null;
+    $('#cmpCount').textContent = done.length + ' sur ' + all.length + ' notées · ' + bons + ' bonne' + (bons > 1 ? 's' : '') + (moy ? ' · moyenne ' + moy + '/5' : '');
+    var list = cmp.showAll ? all : all.filter(function (p) { return cmp.touched[p.id] || !(cmp.avis[p.id] && cmp.avis[p.id].note); });
     list.slice(0, cmp.shown).forEach(function (p) {
       var a = cmp.avis[p.id] || {}, tags = a.defauts || [];
-      var card = h('div', { class: 'pair' + (a.note ? ' ' + a.note : '') },
+      var card = h('div', { class: 'pair' + (a.note ? ' ' + a.note : '') + (a.etoiles >= 4 ? ' top' : '') },
         h('div', { class: 'ptxt' }, '« ' + p.texte + ' »'),
         h('div', { class: 'plays' },
           h('button', { class: 'real', onclick: function () { playUrl('comparer/' + p.vrai, p.texte, 'vrai'); } }, '▶ Sa vraie voix'),
           h('button', { onclick: function () { playUrl('comparer/' + p.clone, p.texte, true); } }, '▶ Le clone')),
         h('div', { class: 'votes' },
-          h('button', { class: 'ok', 'aria-pressed': String(a.note === 'bon'), onclick: function () { saveAvis(p, { note: 'bon', defauts: [] }); } }, 'Bon'),
-          h('button', { class: 'ko', 'aria-pressed': String(a.note === 'pas_bon'), onclick: function () { saveAvis(p, { note: 'pas_bon' }); } }, 'Pas bon')));
+          h('button', { class: 'ok', 'aria-pressed': String(a.note === 'bon'), onclick: function () { saveAvis(p, { note: 'bon', defauts: [] }); } }, 'Bon' + (a.etoiles ? ' · ' + a.etoiles + '/5' : '')),
+          h('button', { class: 'ko', 'aria-pressed': String(a.note === 'pas_bon'), onclick: function () { saveAvis(p, { note: 'pas_bon', etoiles: null }); } }, 'Pas bon')));
+      if (a.note === 'bon') {
+        var st = h('div', { class: 'stars', role: 'group', 'aria-label': 'Note du clone, de 1 à 5' });
+        [1, 2, 3, 4, 5].forEach(function (n) {
+          st.append(h('button', { 'aria-pressed': String(a.etoiles === n), 'aria-label': n + ' sur 5', onclick: function () { saveAvis(p, { etoiles: n }); } }, String(n)));
+        });
+        card.append(h('span', { class: 'meta2' }, 'Note : 1 juste acceptable · 3 lui ressemble · 5 on dirait vraiment lui'), st);
+      }
       if (a.note === 'pas_bon') {
         var tg = h('div', { class: 'tags', role: 'group', 'aria-label': 'Ce qui ne va pas' });
         TAGS.forEach(function (t) {

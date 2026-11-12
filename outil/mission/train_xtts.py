@@ -32,7 +32,16 @@ config = GPTTrainerConfig(
     test_sentences=[])
 model = GPTTrainer.init_from_config(config)
 train, ev = load_tts_samples(config, eval_split=True, eval_split_max_size=256)
+SAVE_AT = {int(x) for x in os.environ.get("SAVE_AT", "5,10,15").split(",")}
+state = {"n": 0}
+def on_epoch_end(trainer):
+    state["n"] += 1
+    if state["n"] in SAVE_AT:
+        f = os.path.join(out, f"papa_epoque{state['n']:02d}.pth")
+        torch.save({"model": trainer.model.state_dict()}, f)
+        print("SAUVE", f, flush=True)
 t = Trainer(TrainerArgs(restore_path=None, skip_train_epoch=False, start_with_eval=False, grad_accum_steps=2),
-            config, output_path=out, model=model, train_samples=train, eval_samples=ev)
+            config, output_path=out, model=model, train_samples=train, eval_samples=ev,
+            callbacks={"on_epoch_end": on_epoch_end})
 t.fit()
 print("ENTRAINEMENT FINI", t.output_path, flush=True)
