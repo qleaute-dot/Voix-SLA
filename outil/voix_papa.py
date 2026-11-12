@@ -265,7 +265,7 @@ class Voix:
         out = self.modele.inference(
             texte, LANGUE, self.gpt_latent, self.speaker_emb,
             temperature=temperature, repetition_penalty=5.0, top_p=0.85,
-            speed=vitesse, enable_text_splitting=True)
+            speed=vitesse, enable_text_splitting=len(texte) > 180)
         wav = np.asarray(out["wav"], dtype="float32")
         pic = np.abs(wav).max() or 1.0
         return wav / pic * 0.89
