@@ -1,4 +1,5 @@
-# usage: seed_conv.sh in_dir out_dir steps
+# usage: seed_conv.sh in_dir out_dir steps  (1 seul fil de calcul pour laisser Applio travailler)
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 cd /root/seedvc; mkdir -p $2
 for f in $1/*_0.wav; do
   b=$(basename $f); [ -f $2/$b ] && continue

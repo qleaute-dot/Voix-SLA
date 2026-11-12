@@ -1,6 +1,6 @@
 # usage: gen_qwen.py items.json outdir ntakes ref.wav "ref text" [modele]
 import sys, os, json, time, torch, numpy as np, soundfile as sf
-torch.set_num_threads(4)
+torch.set_num_threads(2)
 from qwen_tts import Qwen3TTSModel
 items, out, n, ref, reftxt = json.load(open(sys.argv[1])), sys.argv[2], int(sys.argv[3]), sys.argv[4], sys.argv[5]
 M = sys.argv[6] if len(sys.argv) > 6 else "Qwen/Qwen3-TTS-12Hz-0.6B-Base"

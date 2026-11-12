@@ -64,3 +64,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Chaîne de nuit : pipe/nuit_queue.sh (Seed-VC fils → Seed-VC Qwen → Qwen +14 phrases →
   Seed-VC), pipe/rvc_watch.sh (à chaque sauvegarde Applio : rvc_test.sh → rvcout/eNN).
   Matin : pipe/panel.py (mesure toutes les variantes, construit Comparer, meilleures en tête).
+- 23:00 UTC Applio ralenti ×8 par Seed-VC (processeur partagé) : Seed-VC passé à 1 fil
+  et priorité basse (nice 15), Qwen à 2 fils. Aperçu publié : « ta voix + Seed-VC »
+  (4 phrases) à côté de « ta voix telle quelle » et de la vraie voix.
