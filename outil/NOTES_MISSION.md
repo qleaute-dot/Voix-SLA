@@ -67,3 +67,5 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 23:00 UTC Applio ralenti ×8 par Seed-VC (processeur partagé) : Seed-VC passé à 1 fil
   et priorité basse (nice 15), Qwen à 2 fils. Aperçu publié : « ta voix + Seed-VC »
   (4 phrases) à côté de « ta voix telle quelle » et de la vraie voix.
+- 23:10 UTC Avis : Seed-VC au vol 4/4 « pas bon » (accent « anglais », timbre faux) → abandonné.
+  Tout le processeur à Applio ; Qwen +14 phrases en priorité basse (pour Qwen + Applio).

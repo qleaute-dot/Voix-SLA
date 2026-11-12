@@ -8,11 +8,11 @@ last = sorted([int(d.split("/e")[-1]) for d in glob.glob(f"{V}/rvcout/e*")] or [
 E = f"{V}/rvcout/e{last}"
 VARS = [  # tag, dossier, nom
  ("fA", f"{E}/fils", "Ta voix + Applio"),
- ("fS", f"{V}/seedout/fils", "Ta voix + Seed-VC"),
- ("fSA", f"{E}/seedfils", "Ta voix + Seed-VC + Applio"),
+
+
  ("qA", f"{E}/qz", "Voix de synthèse + Applio"),
- ("qS", f"{V}/seedout/qz", "Voix de synthèse + Seed-VC"),
- ("qSA", f"{E}/seedqz", "Voix de synthèse + Seed-VC + Applio"),
+
+
  ("xA", f"{E}/ft5", "Clone entraîné + Applio"),
 ]
 wavs = {tag: sorted(glob.glob(d + "/*_0.wav")) for tag, d, _ in VARS}
