@@ -23,7 +23,7 @@ args = GPTArgs(max_conditioning_length=132300, min_conditioning_length=66150, de
 config = GPTTrainerConfig(
     epochs=epochs, output_path=out, model_args=args, run_name="papa", project_name="papa",
     datasets=[ds], dashboard_logger="tensorboard", audio=XttsAudioConfig(sample_rate=22050, dvae_sample_rate=22050, output_sample_rate=24000),
-    batch_size=3, batch_group_size=0, eval_batch_size=3, num_loader_workers=0, num_eval_loader_workers=0,
+    batch_size=2, batch_group_size=0, eval_batch_size=2, num_loader_workers=0, num_eval_loader_workers=0,
     eval_split_max_size=256, print_step=5, plot_step=1000, log_model_step=1000, save_step=100000, save_n_checkpoints=1,
     save_checkpoints=True, save_best_after=100000, print_eval=True, mixed_precision=False,
     optimizer="AdamW", optimizer_wd_only_on_weights=True,

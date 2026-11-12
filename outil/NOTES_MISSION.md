@@ -28,3 +28,8 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - Demande ajoutée : après validation de la voix principale, essayer une voix
   légère (Piper / sherpa-onnx en WASM) entraînée sur papa, pour la phrase libre
   en temps réel dans l'iPad.
+- 16:35 UTC Avis utilisateur : 15/15 « pas bon » (F5 au vol ×5, XTTS au vol ×10) —
+  ni intonation, ni accent, ni rythme. Le clonage au vol est écarté.
+  Génération XTTS au vol arrêtée pour laisser tout le processeur à l'entraînement.
+- 16:30 UTC Entraînement XTTS (ft1) : 15 époques, lr 1e-5, lot de 3, ≈ 47 s/pas
+  (22 pas/époque) → ≈ 3 à 4 h.
