@@ -156,6 +156,12 @@ details.missing { margin-top: 8px; }
 details.missing summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
 details.missing ul { margin: 6px 0 0; padding-left: 20px; columns: 2 260px; column-gap: 28px; }
 details.missing li { break-inside: avoid; margin-bottom: 4px; }
+.trial { display: grid; gap: 10px; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--line); margin-bottom: 12px; }
+.trial.chosen { border-color: var(--accent); background: var(--accent-soft); }
+.trial h3 { margin: 0; font-size: 1.15rem; }
+.trial .lines { display: grid; gap: 8px; }
+.trial .lines button { text-align: left; min-height: 52px; padding: 8px 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; }
+.trial .lines button:hover { border-color: var(--accent); }
 code.f { font-size: .92em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
 
 /* tab bar */
@@ -230,10 +236,30 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 
   <section class="view" id="v-voix" hidden>
     <h1>Voix</h1>
+    <div class="card" id="sendCard">
+      <h2>Faire cloner la voix par Claude</h2>
+      <p>Choisissez l'enregistrement de papa. Il est envoyé à Claude, dans l'espace privé de cette application. Claude crée la voix et vous propose des essais à écouter ici. La voix choisie s'installe ensuite toute seule.</p>
+      <label class="drop" for="sendFile">
+        <input type="file" id="sendFile" multiple>
+        <span>Choisir l'enregistrement à envoyer</span>
+      </label>
+      <ul class="files" id="sendList"></ul>
+      <div class="row"><button class="small-btn primary" id="sendBtn" disabled>Envoyer à Claude</button><span class="state" id="sendState"></span></div>
+      <p class="verdict" id="sendDone" hidden></p>
+    </div>
+
+    <div class="card" id="trialCard" hidden>
+      <h2>Essais : quelle voix ressemble le plus à papa ?</h2>
+      <p id="trialIntro">Écoutez les mêmes phrases avec chaque version, puis choisissez celle qui lui ressemble le plus.</p>
+      <div id="trials"></div>
+      <p class="verdict" id="trialState" hidden></p>
+    </div>
+
     <div class="card">
       <h2>La voix de papa</h2>
       <div class="status" id="packStatus"><span class="dot"></span><div><strong id="packTitle">Pas encore installée</strong><span id="packSub">Les phrases sont dites avec la voix de l'iPad.</span><div class="meter" id="packMeter" hidden><span id="packBar"></span></div></div></div>
-      <details class="missing" id="missing" hidden><summary id="missingSum"></summary><ul id="missingList"></ul></details>
+      <details class="missing" id="missing" hidden><summary id="missingSum"></summary><ul id="missingList"></ul>
+        <div class="row"><button class="small-btn primary" id="askBtn">Demander ces phrases à Claude</button><span class="state" id="askState"></span></div></details>
       <label class="drop" for="pack">
         <input type="file" id="pack" multiple>
         <span>Importer un fichier voix<br><small style="font-weight:400">le pack voix-de-papa.zip, ou un enregistrement audio</small></span>
@@ -429,6 +455,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   }
   function refreshReal() { renderTiles(); renderLife(); renderReals(); renderPack(); }
   function setPack(blobs) {
+    pack.auto = false;
     Object.keys(pack.urls).forEach(function (k) { try { URL.revokeObjectURL(pack.urls[k]); } catch (e) {} });
     pack.urls = {}; pack.count = 0;
     Object.keys(blobs).forEach(function (k) { pack.urls[k] = URL.createObjectURL(blobs[k]); pack.count++; });
@@ -655,7 +682,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     var texts = allTexts(), miss = texts.filter(function (t) { return !pack.urls[cle(t)] && !realUrls[cle(t)]; });
     var st = $('#packStatus'), has = pack.count > 0;
     st.className = 'status' + (has ? ' ok' : '');
-    $('#packTitle').textContent = has ? 'Installée sur cet iPad' : 'Pas encore installée';
+    $('#packTitle').textContent = has ? (pack.auto ? 'Installée par Claude' : 'Installée sur cet iPad') : 'Pas encore installée';
     $('#packSub').textContent = has
       ? (texts.length - miss.length) + ' phrases sur ' + texts.length + ' sont dites avec la voix de papa.'
       : 'Les phrases sont dites avec la voix de l\'iPad.';
@@ -776,6 +803,120 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     });
   }
 
+  /* ---------- liaison avec Claude : envoi, essais, voix publiée ---------- */
+  function cap(name) { try { return (window.claude && window.claude.use) ? window.claude.use(name) : Promise.resolve(null); } catch (e) { return Promise.resolve(null); } }
+  var sendFiles = [];
+  $('#sendFile').addEventListener('change', function (ev) {
+    sendFiles = sendFiles.concat(Array.prototype.slice.call(ev.target.files || []));
+    ev.target.value = '';
+    var ul = $('#sendList'); ul.textContent = '';
+    sendFiles.forEach(function (f, i) {
+      ul.append(h('li', {}, h('div', { class: 'meta' }, h('span', { class: 'fname' }, f.name), h('span', { class: 'state' }, fmtSize(f.size)),
+        h('button', { class: 'small-btn', onclick: function () { sendFiles.splice(i, 1); ev.target.dispatchEvent(new Event('change')); } }, 'Retirer'))));
+    });
+    $('#sendBtn').disabled = !sendFiles.length;
+  });
+  function b64(buf) {
+    var bytes = new Uint8Array(buf), out = [], CH = 0x8000;
+    for (var i = 0; i < bytes.length; i += CH) out.push(String.fromCharCode.apply(null, bytes.subarray(i, i + CH)));
+    return btoa(out.join(''));
+  }
+  var PART = 12 * 1024 * 1024;
+  $('#sendBtn').addEventListener('click', function () {
+    var st = $('#sendState'), btn = $('#sendBtn');
+    if (!sendFiles.length) return;
+    btn.disabled = true; st.textContent = 'Préparation…';
+    Promise.all([cap('assets'), cap('db')]).then(function (c) {
+      var assets = c[0], db = c[1];
+      if (!assets || !db) throw { code: 'unavailable' };
+      var envoi = { date: new Date().toISOString(), fichiers: [], textes: allTexts() };
+      var chain = Promise.resolve(), total = sendFiles.reduce(function (n, f) { return n + Math.ceil(f.size / PART); }, 0), done = 0;
+      sendFiles.forEach(function (f) {
+        var entry = { nom: f.name, taille: f.size, type: f.type || '', parts: [] };
+        envoi.fichiers.push(entry);
+        for (var off = 0; off < f.size; off += PART) (function (o) {
+          chain = chain.then(function () {
+            st.textContent = 'Envoi ' + (done + 1) + ' sur ' + total + '…';
+            return f.slice(o, o + PART).arrayBuffer();
+          }).then(function (buf) {
+            return assets.upload(new Blob([b64(buf)], { type: 'text/plain' }));
+          }).then(function (r) { entry.parts.push(r.id); done++; });
+        })(off);
+      });
+      return chain.then(function () { return db.collection('envois').doc('e' + Date.now()).set(envoi); });
+    }).then(function () {
+      st.textContent = '';
+      sendFiles = []; $('#sendList').textContent = '';
+      var d = $('#sendDone'); d.hidden = false;
+      d.textContent = 'Enregistrement envoyé. Écrivez maintenant à Claude, dans la conversation : « C\'est envoyé ». Les essais apparaîtront ici.';
+    }).catch(function (e) {
+      btn.disabled = false;
+      var code = e && e.code;
+      st.textContent = code === 'unavailable' || code === 'not_granted'
+        ? 'Envoi impossible dans cette vue. Ouvrez l\'application dans claude.ai ou dans l\'application Claude, avec votre compte.'
+        : code === 'too_large' || code === 'quota_exceeded'
+          ? 'Le fichier est trop gros pour l\'espace de l\'application. Essayez un fichier m4a ou mp3 plutôt que wav.'
+          : 'L\'envoi a échoué (' + (code || 'erreur') + '). Réessayez.';
+    });
+  });
+
+  $('#askBtn').addEventListener('click', function () {
+    var st = $('#askState');
+    var miss = allTexts().filter(function (t) { return !pack.urls[cle(t)] && !realUrls[cle(t)]; });
+    cap('db').then(function (db) {
+      if (!db) throw { code: 'unavailable' };
+      return db.collection('demandes').doc('d' + Date.now()).set({ date: new Date().toISOString(), textes: miss });
+    }).then(function () { st.textContent = miss.length + ' phrases demandées. Écrivez à Claude : « Nouvelles phrases ».'; })
+      .catch(function () { st.textContent = 'Demande impossible dans cette vue. Ouvrez l\'application dans claude.ai.'; });
+  });
+
+  // Essais publiés par Claude : essais/manifest.json
+  var chosen = null;
+  function renderTrials(man) {
+    var box = $('#trials'); box.textContent = '';
+    if (man.intro) $('#trialIntro').textContent = man.intro;
+    man.versions.forEach(function (v) {
+      var lines = h('div', { class: 'lines' });
+      v.essais.forEach(function (e) {
+        lines.append(h('button', { onclick: function () { stopAll(); player.src = 'essais/' + e.fichier; player.play().catch(function () {}); saidEl.classList.remove('idle'); saidEl.textContent = e.texte; showSrc(true); stopBtn.hidden = false; againBtn.hidden = true; } }, '▶ ' + e.texte));
+      });
+      box.append(h('div', { class: 'trial' + (chosen === v.id ? ' chosen' : '') },
+        h('h3', {}, v.nom), v.note ? h('span', { class: 'state' }, v.note) : null, lines,
+        h('div', {}, h('button', { class: 'small-btn' + (chosen === v.id ? '' : ' primary'), onclick: function () { choose(v, man); } }, chosen === v.id ? 'Version choisie' : 'Choisir cette version'))));
+    });
+  }
+  function choose(v, man) {
+    var st = $('#trialState');
+    cap('db').then(function (db) {
+      if (!db) throw { code: 'unavailable' };
+      return db.collection('choix').doc('voix').set({ version: v.id, essai: man.id || '', date: new Date().toISOString() });
+    }).then(function () {
+      chosen = v.id; renderTrials(man);
+      st.hidden = false; st.textContent = '« ' + v.nom + ' » choisie. Écrivez à Claude : « J\'ai choisi ». Il prépare alors toutes les phrases avec cette voix.';
+    }).catch(function () { st.hidden = false; st.textContent = 'Choix impossible dans cette vue. Ouvrez l\'application dans claude.ai.'; });
+  }
+  function loadPublished() {
+    fetch('essais/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
+      if (!man || !man.versions || !man.versions.length) return;
+      $('#trialCard').hidden = false;
+      cap('db').then(function (db) { return db ? db.collection('choix').doc('voix').get() : null; })
+        .then(function (snap) { var d = snap && (snap.data ? snap.data() : snap); if (d && d.version && (!man.id || d.essai === man.id)) chosen = d.version; })
+        .catch(function () {}).then(function () { renderTrials(man); });
+    }).catch(function () {});
+    fetch('voix/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
+      if (!man || man.format !== 'voix-de-papa' || !man.phrases) return;
+      var blobs = {};
+      return Promise.all(man.phrases.map(function (e) {
+        return fetch('voix/' + e.fichier).then(function (r) { if (!r.ok) throw 0; return r.blob(); })
+          .then(function (b) { blobs[cle(e.texte)] = new Blob([b], { type: 'audio/mpeg' }); }).catch(function () {});
+      })).then(function () {
+        if (!Object.keys(blobs).length) return;
+        setPack(blobs); pack.auto = man.moteur || true; renderPack();
+        dbReplace(blobs).catch(function () {});
+      });
+    }).catch(function () {});
+  }
+
   /* ---------- tabs ---------- */
   var TABS = ['parler', 'conversation', 'ma-vie', 'voix'];
   function route() {
@@ -788,7 +929,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 
   renderPills(); renderTiles(); renderThread(); renderLife(); renderPack(); route();
   renderReals();
-  dbAll().then(function (blobs) { if (Object.keys(blobs).length) setPack(blobs); }).catch(function () {});
+  dbAll().then(function (blobs) { if (Object.keys(blobs).length && !pack.auto) setPack(blobs); }).catch(function () {}).then(loadPublished);
   dbAll('vrais').then(function (recs) {
     Object.keys(recs).forEach(function (k) { if (recs[k] && recs[k].blob) setReal(recs[k].texte, recs[k]); });
     if (Object.keys(recs).length) refreshReal();
