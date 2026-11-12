@@ -53,3 +53,8 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   « Voilà / Bon / Oui / Non » (AST AudioSet + mots Whisper). Validation : db sons/<id>.retire.
   RVC (Applio) : extraction finie, entraînement 300 époques en cours (CPU).
   Qwen3-TTS 0.6B Base (clonage) : c001 sans faute de mots, mais ≈ 20 min/phrase sur CPU partagé.
+- 21:15 UTC RVC : 1er lancement tué (mémoire, -9) ; relancé seul, lot 4, 59 pas/époque,
+  ≈ 4,6 min/époque, sauvegarde toutes les 25 époques. Index papa.index créé.
+  Qwen3-TTS au vol, 5 phrases test : mots ≈ parfaits (WER moy. 6 %), timbre faible (sim 0,56).
+  Publié dans Comparer (version « qz ») pour jugement de l'accent.
+  Suite : à chaque sauvegarde RVC, convertir Qwen + ft5 (pipe/rvc_conv.py) et mesurer.
