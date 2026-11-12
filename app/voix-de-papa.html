@@ -249,6 +249,12 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     <h1>Ma vie</h1>
     <p class="note" id="exNote">Les phrases marquées « exemple » montrent le principe. Remplacez-les par les vrais souvenirs de papa, écrits comme lui les dirait, à la première personne. Touchez une phrase pour l'entendre.</p>
     <div class="addrow" style="margin:0 0 22px"><button class="small-btn" id="rmExamples">Retirer tous les exemples</button></div>
+    <div class="block" id="vraiesBlock" hidden>
+      <h2 class="story">Ses vraies paroles</h2>
+      <p class="note">Ce sont de vrais moments de son enregistrement, avec sa voix, ses rires et ses hésitations. Touchez un passage pour l'écouter.</p>
+      <ul class="entries" id="vraiesList"></ul>
+      <div class="addrow"><button class="small-btn" id="vraiesMore" hidden>Afficher tous les passages</button></div>
+    </div>
     <div id="lifeSections"></div>
   </section>
 
@@ -992,8 +998,27 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     }).catch(function () {});
   }
 
+  // Ses vraies paroles : vraies/manifest.json (passages réels de l'enregistrement)
+  var vraies = { all: false, man: null };
+  function renderVraies() {
+    var ul = $('#vraiesList'); ul.textContent = '';
+    var list = vraies.all ? vraies.man.passages : vraies.man.passages.slice(0, 12);
+    list.forEach(function (v) {
+      ul.append(h('li', { class: 'entry' }, h('button', { class: 'say', onclick: function () { playUrl('vraies/' + v.fichier, v.texte, 'vrai'); } },
+        v.texte, h('span', { class: 'badge real' }, 'sa vraie voix'))));
+    });
+    $('#vraiesMore').hidden = vraies.all || vraies.man.passages.length <= 12;
+  }
+  $('#vraiesMore').addEventListener('click', function () { vraies.all = true; renderVraies(); });
+  function loadVraies() {
+    fetch('vraies/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
+      if (!man || !man.passages || !man.passages.length) return;
+      vraies.man = man; $('#vraiesBlock').hidden = false; renderVraies();
+    }).catch(function () {});
+  }
+
   function loadPublished() {
-    loadCmp();
+    loadCmp(); loadVraies();
     fetch('essais/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
       if (!man || !man.versions || !man.versions.length) return;
       $('#trialCard').hidden = false;

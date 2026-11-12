@@ -44,3 +44,8 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 19:45 UTC Mesures sur 5 phrases jamais entendues : base sim 68 / mots faux 23 % ;
   ft ép. 5 sim 73 / mots faux 7 % (sa vraie voix ≈ 79). Série Comparer « ft5 » publiée :
   71 phrases (5 jamais entendues en tête), meilleure de 2 prises par phrase.
+- 20:20 UTC Avis sur ft5 : 68/71 « pas bon » (accent 60, timbre 55, intonation 54).
+  Fine-tuning XTTS écarté. Nouveau plan (sans ElevenLabs en attendant) :
+  « Ses vraies paroles » (publié, 49 passages, adresse exclue), « Ses sons »,
+  conversion de timbre RVC (Applio, autorisé par l'utilisateur) entraînée sur papa,
+  puis conversion de la voix du fils (même accent régional) → timbre de papa.
