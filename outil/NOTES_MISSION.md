@@ -49,3 +49,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   « Ses vraies paroles » (publié, 49 passages, adresse exclue), « Ses sons »,
   conversion de timbre RVC (Applio, autorisé par l'utilisateur) entraînée sur papa,
   puis conversion de la voix du fils (même accent régional) → timbre de papa.
+- 21:00 UTC « Ses sons » publié (catégorie dans Parler) : 2 rires, 3 soupirs, raclement,
+  « Voilà / Bon / Oui / Non » (AST AudioSet + mots Whisper). Validation : db sons/<id>.retire.
+  RVC (Applio) : extraction finie, entraînement 300 époques en cours (CPU).
+  Qwen3-TTS 0.6B Base (clonage) : c001 sans faute de mots, mais ≈ 20 min/phrase sur CPU partagé.

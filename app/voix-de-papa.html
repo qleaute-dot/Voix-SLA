@@ -543,12 +543,43 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   var cat = 'courant', editing = false;
   function renderPills() {
     var box = $('#catPills'); box.textContent = '';
-    CATS.forEach(function (c) {
+    var cats = sons.man ? CATS.slice(0, 1).concat([{ id: 'sons', label: 'Ses sons' }], CATS.slice(1)) : CATS;
+    cats.forEach(function (c) {
       box.append(h('button', { class: 'pill' + (c.alert ? ' alert' : ''), 'aria-pressed': String(c.id === cat), onclick: function () { cat = c.id; renderPills(); renderTiles(); } }, c.label));
     });
   }
+  // Ses sons : rires, soupirs, petits mots, tirés de son vrai enregistrement (sons/manifest.json)
+  var sons = { man: null, avis: {} };
+  function renderSons(box) {
+    var list = sons.man.sons.filter(function (x) { return editing || !(sons.avis[x.id] && sons.avis[x.id].retire); });
+    box.append(h('div', { class: 'note', style: 'grid-column:1/-1' }, editing
+      ? 'Ces sons ont été repérés automatiquement. Écoutez-les et retirez ceux qui ne sont pas justes.'
+      : 'Sa vraie voix : ses rires, ses soupirs, ses petits mots.'));
+    list.forEach(function (x) {
+      var off = sons.avis[x.id] && sons.avis[x.id].retire;
+      var w = h('div', { class: 'tile-wrap' + (editing ? ' editing' : '') }, h('button', { class: 'tile', style: off ? 'opacity:.45' : '', onclick: function () { playUrl('sons/' + x.fichier, x.label, 'vrai'); } }, x.label, h('span', { class: 'real' }, 'sa vraie voix')));
+      if (editing) w.append(h('button', { class: 'tile-rec', onclick: function () {
+        var a = { retire: !off, label: x.label, date: new Date().toISOString() }; sons.avis[x.id] = a; renderTiles();
+        cap('db').then(function (db) { if (db) return db.collection('sons').doc(x.id).set(a); }).catch(function () {});
+      } }, off ? 'Remettre' : 'Retirer'));
+      box.append(w);
+    });
+    $('#addPhrase').hidden = true;
+    var t = $('#editToggle'); t.textContent = editing ? 'Terminer' : 'Vérifier les sons'; t.setAttribute('aria-pressed', String(editing));
+  }
+  function loadSons() {
+    fetch('sons/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
+      if (!man || !man.sons || !man.sons.length) return;
+      sons.man = man; renderPills();
+      cap('db').then(function (db) { return db ? db.collection('sons').get() : null; }).then(function (snap) {
+        if (snap) snap.docs.forEach(function (d) { sons.avis[d.id] = d.data(); });
+        if (cat === 'sons') renderTiles();
+      }).catch(function () {});
+    }).catch(function () {});
+  }
   function renderTiles() {
     var box = $('#tiles'); box.textContent = '';
+    if (cat === 'sons' && sons.man) return renderSons(box);
     var list = S.phrases[cat] || [];
     var alert = cat === 'urgence';
     list.forEach(function (p, i) {
@@ -1018,7 +1049,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   }
 
   function loadPublished() {
-    loadCmp(); loadVraies();
+    loadCmp(); loadVraies(); loadSons();
     fetch('essais/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
       if (!man || !man.versions || !man.versions.length) return;
       $('#trialCard').hidden = false;
