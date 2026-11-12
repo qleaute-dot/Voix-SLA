@@ -162,6 +162,20 @@ details.missing li { break-inside: avoid; margin-bottom: 4px; }
 .trial .lines { display: grid; gap: 8px; }
 .trial .lines button { text-align: left; min-height: 52px; padding: 8px 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; }
 .trial .lines button:hover { border-color: var(--accent); }
+.cmp-list { display: grid; gap: 12px; }
+.pair { display: grid; gap: 10px; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); }
+.pair.bon { border-color: var(--accent); background: var(--accent-soft); }
+.pair.pas_bon { border-color: var(--alert); background: var(--alert-soft); }
+.pair .ptxt { font-family: var(--font-story); font-size: 1.2rem; line-height: 1.35; overflow-wrap: anywhere; }
+.pair .plays, .pair .votes, .pair .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.pair .plays button { flex: 1 1 150px; min-height: 52px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); font-weight: 700; }
+.pair .plays button.real { border-color: var(--accent); }
+.pair .votes button { flex: 1 1 120px; min-height: 52px; border-radius: 12px; font-weight: 700; border: 2px solid var(--line); background: var(--surface); }
+.pair .votes .ok[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.pair .votes .ko[aria-pressed="true"] { background: var(--alert); color: var(--surface); border-color: var(--alert); }
+.pair .tags button { min-height: 44px; padding: 4px 14px; border-radius: 22px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; font-size: .95rem; }
+.pair .tags button[aria-pressed="true"] { border-color: var(--alert); background: var(--alert-soft); }
+.pair .meta2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 code.f { font-size: .92em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
 
 /* tab bar */
@@ -236,6 +250,17 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 
   <section class="view" id="v-voix" hidden>
     <h1>Voix</h1>
+    <div class="card" id="cmpCard" hidden>
+      <h2>Comparer : sa vraie voix et le clone</h2>
+      <p>Pour chaque phrase, écoutez sa vraie voix puis le clone, et dites si le clone est bon. Si non, précisez ce qui ne va pas. Chaque avis est enregistré tout de suite et aide Claude à améliorer la voix.</p>
+      <div class="row" style="margin:6px 0 12px">
+        <span class="state" id="cmpCount"></span>
+        <button class="small-btn" id="cmpFilter" aria-pressed="false">Afficher aussi les phrases déjà notées</button>
+      </div>
+      <div id="cmpList" class="cmp-list"></div>
+      <div class="row"><button class="small-btn" id="cmpMore" hidden>Afficher 10 phrases de plus</button></div>
+    </div>
+
     <div class="card" id="sendCard">
       <h2>Faire cloner la voix par Claude</h2>
       <p>Choisissez l'enregistrement de papa. Il est envoyé à Claude, dans l'espace privé de cette application. Claude crée la voix et vous propose des essais à écouter ici. La voix choisie s'installe ensuite toute seule.</p>
@@ -899,7 +924,63 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       st.hidden = false; st.textContent = '« ' + v.nom + ' » choisie. Écrivez à Claude : « J\'ai choisi ». Il prépare alors toutes les phrases avec cette voix.';
     }).catch(function () { st.hidden = false; st.textContent = 'Choix impossible dans cette vue. Ouvrez l\'application dans claude.ai.'; });
   }
+  // Comparaisons « vraie voix / clone » : comparer/manifest.json ; avis dans db avis/<id>
+  var cmp = { man: null, avis: {}, showAll: false, shown: 10 };
+  var TAGS = ['Accent', 'Timbre', 'Rythme', 'Intonation', 'Mot déformé', 'Bruit, son métallique'];
+  function playUrl(url, label, papa) { stopAll(); player.src = url; player.play().catch(function () {}); saidEl.classList.remove('idle'); saidEl.textContent = label; showSrc(papa); stopBtn.hidden = false; againBtn.hidden = true; }
+  function saveAvis(p, patch) {
+    var a = Object.assign({}, cmp.avis[p.id] || {}, patch, { version: p.version, texte: p.texte, date: new Date().toISOString() });
+    cmp.avis[p.id] = a; renderCmp();
+    cap('db').then(function (db) { if (!db) throw 0; return db.collection('avis').doc(p.id).set(a); })
+      .catch(function () { $('#cmpCount').textContent = 'Avis non enregistré : ouvrez l\'application dans claude.ai.'; });
+  }
+  function renderCmp() {
+    var box = $('#cmpList'); box.textContent = '';
+    var all = cmp.man.paires, done = all.filter(function (p) { return cmp.avis[p.id] && cmp.avis[p.id].note; });
+    var bons = done.filter(function (p) { return cmp.avis[p.id].note === 'bon'; }).length;
+    $('#cmpCount').textContent = done.length + ' sur ' + all.length + ' notées · ' + bons + ' bonne' + (bons > 1 ? 's' : '');
+    var list = cmp.showAll ? all : all.filter(function (p) { return !(cmp.avis[p.id] && cmp.avis[p.id].note); });
+    list.slice(0, cmp.shown).forEach(function (p) {
+      var a = cmp.avis[p.id] || {}, tags = a.defauts || [];
+      var card = h('div', { class: 'pair' + (a.note ? ' ' + a.note : '') },
+        h('div', { class: 'ptxt' }, '« ' + p.texte + ' »'),
+        h('div', { class: 'plays' },
+          h('button', { class: 'real', onclick: function () { playUrl('comparer/' + p.vrai, p.texte, 'vrai'); } }, '▶ Sa vraie voix'),
+          h('button', { onclick: function () { playUrl('comparer/' + p.clone, p.texte, true); } }, '▶ Le clone')),
+        h('div', { class: 'votes' },
+          h('button', { class: 'ok', 'aria-pressed': String(a.note === 'bon'), onclick: function () { saveAvis(p, { note: 'bon', defauts: [] }); } }, 'Bon'),
+          h('button', { class: 'ko', 'aria-pressed': String(a.note === 'pas_bon'), onclick: function () { saveAvis(p, { note: 'pas_bon' }); } }, 'Pas bon')));
+      if (a.note === 'pas_bon') {
+        var tg = h('div', { class: 'tags', role: 'group', 'aria-label': 'Ce qui ne va pas' });
+        TAGS.forEach(function (t) {
+          var on = tags.indexOf(t) >= 0;
+          tg.append(h('button', { 'aria-pressed': String(on), onclick: function () { var n = tags.filter(function (x) { return x !== t; }); if (!on) n.push(t); saveAvis(p, { defauts: n }); } }, t));
+        });
+        card.append(h('span', { class: 'meta2' }, 'Ce qui ne va pas'), tg);
+      }
+      card.append(h('span', { class: 'meta2' }, p.nomVersion || ''));
+      box.append(card);
+    });
+    if (!list.length) box.append(h('div', { class: 'empty' }, 'Toutes les phrases sont notées. Merci ! Claude en tient compte pour la suite.'));
+    $('#cmpMore').hidden = list.length <= cmp.shown;
+    $('#cmpFilter').textContent = cmp.showAll ? 'Afficher seulement les phrases à noter' : 'Afficher aussi les phrases déjà notées';
+  }
+  $('#cmpFilter').addEventListener('click', function () { cmp.showAll = !cmp.showAll; cmp.shown = 10; renderCmp(); });
+  $('#cmpMore').addEventListener('click', function () { cmp.shown += 10; renderCmp(); });
+  function loadCmp() {
+    fetch('comparer/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
+      if (!man || !man.paires || !man.paires.length) return;
+      cmp.man = man; $('#cmpCard').hidden = false; renderCmp();
+      cap('db').then(function (db) { return db ? db.collection('avis').get() : null; }).then(function (snap) {
+        if (!snap) return;
+        snap.docs.forEach(function (d) { cmp.avis[d.id] = d.data(); });
+        renderCmp();
+      }).catch(function () {});
+    }).catch(function () {});
+  }
+
   function loadPublished() {
+    loadCmp();
     fetch('essais/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
       if (!man || !man.versions || !man.versions.length) return;
       $('#trialCard').hidden = false;
