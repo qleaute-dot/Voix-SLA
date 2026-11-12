@@ -33,3 +33,9 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Génération XTTS au vol arrêtée pour laisser tout le processeur à l'entraînement.
 - 16:30 UTC Entraînement XTTS (ft1) : 15 époques, lr 1e-5, lot de 3, ≈ 47 s/pas
   (22 pas/époque) → ≈ 3 à 4 h.
+- 16:39 UTC Entraînement ft1 relancé (lot 2, accumulation 2, 33 pas/époque, ≈ 12 min/époque),
+  sauvegardes aux époques 1, 5, 10, 15 (rappel de fin d'époque). Perte mel sur
+  phrases de test : 3,81 (ép. 1) → 3,64 (ép. 2).
+- Ensuite : pipe/apres_ft.sh (base vs époques 5/10/15 sur 5 phrases de test :
+  ressemblance + exactitude), puis série Comparer avec la meilleure époque.
+- App : note de 1 à 5 après « Bon » (avis.etoiles), à publier avec la série.
