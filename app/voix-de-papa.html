@@ -107,6 +107,16 @@ textarea.field { min-height: 92px; resize: vertical; }
 .badge { display: inline-block; font-family: var(--font-ui); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; background: var(--surface-2); color: var(--muted); border-radius: 6px; padding: 1px 8px; margin-left: 8px; vertical-align: middle; }
 .rm { flex: none; width: 56px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--muted); font-size: 20px; }
 .rm:hover { border-color: var(--alert); color: var(--alert); }
+.rec { flex: none; min-width: 56px; padding: 0 10px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--muted); font-size: 14px; font-weight: 700; line-height: 1.15; }
+.rec:hover { border-color: var(--accent); color: var(--fg); }
+.rec.on { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); }
+.tile .real { display: block; margin-top: 8px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.tile-rec { position: absolute; left: 8px; bottom: 8px; min-height: 40px; padding: 4px 12px; border-radius: 10px; border: 2px solid var(--accent); background: var(--surface); color: var(--fg); font-size: 14px; font-weight: 700; }
+.tile-wrap.editing .tile { padding-bottom: 60px; }
+.badge.real { background: var(--accent-soft); color: var(--fg); }
+.reals { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.reals li { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; background: var(--surface-2); }
+.reals li span { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
 
 /* voice tab */
 .card { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 18px 20px; margin-bottom: 18px; }
@@ -225,11 +235,18 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       <div class="status" id="packStatus"><span class="dot"></span><div><strong id="packTitle">Pas encore installée</strong><span id="packSub">Les phrases sont dites avec la voix de l'iPad.</span><div class="meter" id="packMeter" hidden><span id="packBar"></span></div></div></div>
       <details class="missing" id="missing" hidden><summary id="missingSum"></summary><ul id="missingList"></ul></details>
       <label class="drop" for="pack">
-        <input type="file" id="pack" accept=".zip,application/zip">
-        <span>Importer voix-de-papa.zip</span>
+        <input type="file" id="pack" multiple>
+        <span>Importer un fichier voix<br><small style="font-weight:400">le pack voix-de-papa.zip, ou un enregistrement audio</small></span>
       </label>
       <div class="row"><span class="state" id="packState"></span></div>
       <div class="row"><button class="small-btn" id="packClear" hidden>Retirer la voix de papa de cet iPad</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Ses vrais enregistrements</h2>
+      <p>Une phrase peut être jouée avec un vrai enregistrement de papa (message vocal, vidéo de famille…), au lieu de la voix clonée. Touchez « Son » à côté d'un souvenir, ou « Associer un son » sur une tuile en mode « Modifier les phrases ».</p>
+      <ul class="reals" id="realList"></ul>
+      <div class="row"><span class="state" id="realState"></span></div>
     </div>
 
     <div class="card">
@@ -259,6 +276,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
         <input type="file" id="sample" multiple>
         <span>Choisir un ou plusieurs fichiers audio</span>
       </label>
+      <p class="verdict" id="sampleNote" hidden></p>
       <ul class="files" id="fileList"></ul>
       <div class="verdict" id="verdict" hidden></div>
       <p style="margin-top:14px"><strong>Pour un meilleur résultat</strong></p>
@@ -271,6 +289,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   </section>
 </main>
 
+<input type="file" id="assocFile" aria-hidden="true" tabindex="-1" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
 <nav class="tabs" aria-label="Sections"><div class="wrap">
   <a href="#parler" data-tab="parler">Parler</a>
   <a href="#conversation" data-tab="conversation">Conversation</a>
@@ -356,17 +375,22 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   function openDb() {
     return new Promise(function (res, rej) {
       try {
-        var r = indexedDB.open(DB_NAME, 1);
-        r.onupgradeneeded = function () { r.result.createObjectStore('phrases'); };
+        var r = indexedDB.open(DB_NAME, 2);
+        r.onupgradeneeded = function () {
+          var db = r.result;
+          if (!db.objectStoreNames.contains('phrases')) db.createObjectStore('phrases');
+          if (!db.objectStoreNames.contains('vrais')) db.createObjectStore('vrais');
+        };
         r.onsuccess = function () { res(r.result); };
         r.onerror = function () { rej(r.error); };
       } catch (e) { rej(e); }
     });
   }
-  function dbAll() {
+  function dbAll(store) {
+    store = store || 'phrases';
     return openDb().then(function (db) {
       return new Promise(function (res, rej) {
-        var out = {}, tx = db.transaction('phrases', 'readonly'), st = tx.objectStore('phrases');
+        var out = {}, tx = db.transaction(store, 'readonly'), st = tx.objectStore(store);
         var c = st.openCursor();
         c.onsuccess = function () { var cur = c.result; if (cur) { out[cur.key] = cur.value; cur.continue(); } };
         tx.oncomplete = function () { res(out); };
@@ -385,6 +409,25 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       });
     });
   }
+  function dbPut(store, key, val) {
+    return openDb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction(store, 'readwrite'), st = tx.objectStore(store);
+        if (val == null) st.delete(key); else st.put(val, key);
+        tx.oncomplete = function () { res(); };
+        tx.onerror = function () { rej(tx.error); };
+      });
+    });
+  }
+  // Vrais enregistrements de papa, associés à une phrase : { cle: { texte, nom, blob } }
+  var reals = {}, realUrls = {};
+  function hasReal(t) { return !!realUrls[cle(t)]; }
+  function setReal(texte, rec) {
+    var k = cle(texte);
+    if (realUrls[k]) { try { URL.revokeObjectURL(realUrls[k]); } catch (e) {} delete realUrls[k]; }
+    if (rec) { reals[k] = rec; realUrls[k] = URL.createObjectURL(rec.blob); } else delete reals[k];
+  }
+  function refreshReal() { renderTiles(); renderLife(); renderReals(); renderPack(); }
   function setPack(blobs) {
     Object.keys(pack.urls).forEach(function (k) { try { URL.revokeObjectURL(pack.urls[k]); } catch (e) {} });
     pack.urls = {}; pack.count = 0;
@@ -404,16 +447,17 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   }
   var player = new Audio();
   var srcEl = $('#src');
-  function showSrc(papa) { srcEl.hidden = false; srcEl.className = 'src' + (papa ? ' papa' : ''); srcEl.textContent = papa ? 'voix de papa' : 'voix de l\'iPad'; }
+  function showSrc(papa) { srcEl.hidden = false; srcEl.className = 'src' + (papa ? ' papa' : ''); srcEl.textContent = papa === 'vrai' ? 'sa vraie voix' : papa ? 'voix de papa' : 'voix de l\'iPad'; }
   function stopAll() { try { player.pause(); } catch (e) {} if (synth) { try { synth.cancel(); } catch (e) {} } }
   function speak(text) {
     lastText = text;
     saidEl.textContent = text; saidEl.classList.remove('idle');
     againBtn.hidden = false;
     stopAll();
-    var url = pack.urls[cle(text)];
+    var real = realUrls[cle(text)];
+    var url = real || pack.urls[cle(text)];
     if (url) {
-      stopBtn.hidden = false; showSrc(true);
+      stopBtn.hidden = false; showSrc(real ? 'vrai' : true);
       player.src = url; player.currentTime = 0;
       var pr = player.play();
       if (pr && pr.catch) pr.catch(function () {});
@@ -446,8 +490,11 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     var list = S.phrases[cat] || [];
     var alert = cat === 'urgence';
     list.forEach(function (p, i) {
-      var w = h('div', { class: 'tile-wrap' }, h('button', { class: 'tile' + (alert ? ' alert' : ''), onclick: function () { speak(p); } }, p));
-      if (editing) w.append(h('button', { class: 'del', 'aria-label': 'Supprimer : ' + p, onclick: function () { list.splice(i, 1); save(); renderTiles(); } }, '×'));
+      var w = h('div', { class: 'tile-wrap' + (editing ? ' editing' : '') }, h('button', { class: 'tile' + (alert ? ' alert' : ''), onclick: function () { speak(p); } }, p, hasReal(p) ? h('span', { class: 'real' }, 'sa vraie voix') : null));
+      if (editing) {
+        w.append(h('button', { class: 'del', 'aria-label': 'Supprimer : ' + p, onclick: function () { list.splice(i, 1); save(); renderTiles(); } }, '×'));
+        w.append(h('button', { class: 'tile-rec', 'aria-label': (hasReal(p) ? 'Retirer l\'enregistrement : ' : 'Associer un enregistrement : ') + p, onclick: function () { recAction(p); } }, hasReal(p) ? 'Retirer le son' : 'Associer un son'));
+      }
       box.append(w);
     });
     if (!list.length) box.append(h('div', { class: 'empty' }, 'Cette catégorie est vide. Touchez « Modifier les phrases » pour en ajouter.'));
@@ -517,7 +564,8 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       list.forEach(function (e, i) {
         if (e.ex) anyEx = true;
         ul.append(h('li', { class: 'entry' },
-          h('button', { class: 'say', onclick: function () { speak(e.t); } }, e.t, e.ex ? h('span', { class: 'badge' }, 'exemple') : null),
+          h('button', { class: 'say', onclick: function () { speak(e.t); } }, e.t, e.ex ? h('span', { class: 'badge' }, 'exemple') : null, hasReal(e.t) ? h('span', { class: 'badge real' }, 'sa vraie voix') : null),
+          h('button', { class: 'rec' + (hasReal(e.t) ? ' on' : ''), 'aria-label': (hasReal(e.t) ? 'Retirer l\'enregistrement de cette phrase' : 'Associer un enregistrement à cette phrase'), onclick: function () { recAction(e.t); } }, hasReal(e.t) ? 'Retirer le son' : 'Son'),
           h('button', { class: 'rm', 'aria-label': 'Supprimer cette phrase', onclick: function () { list.splice(i, 1); save(); renderLife(); } }, '×')));
       });
       if (!list.length) ul.append(h('li', { class: 'empty' }, 'Rien encore. Ajoutez un souvenir ci-dessous.'));
@@ -575,8 +623,8 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       else { v.className = 'verdict'; v.textContent = 'Durée totale ' + fmtDur(total) + '. C\'est suffisant pour un premier essai de clonage.'; }
     }
   }
-  sampleEl.addEventListener('change', function () {
-    Array.prototype.forEach.call(sampleEl.files, function (f) {
+  function addSamples(fileList) {
+    Array.prototype.forEach.call(fileList, function (f) {
       var item = { name: f.name, size: f.size, dur: null, url: null, err: false };
       try { item.url = URL.createObjectURL(f); } catch (e) { item.err = true; }
       samples.push(item);
@@ -587,8 +635,9 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
         a.src = item.url;
       }
     });
-    sampleEl.value = ''; renderSamples();
-  });
+    renderSamples();
+  }
+  sampleEl.addEventListener('change', function () { addSamples(sampleEl.files); sampleEl.value = ''; });
 
   /* ---------- pack : import, couverture, export des phrases ---------- */
   function allTexts() {
@@ -603,7 +652,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     return out;
   }
   function renderPack() {
-    var texts = allTexts(), miss = texts.filter(function (t) { return !pack.urls[cle(t)]; });
+    var texts = allTexts(), miss = texts.filter(function (t) { return !pack.urls[cle(t)] && !realUrls[cle(t)]; });
     var st = $('#packStatus'), has = pack.count > 0;
     st.className = 'status' + (has ? ' ok' : '');
     $('#packTitle').textContent = has ? 'Installée sur cet iPad' : 'Pas encore installée';
@@ -620,9 +669,20 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       miss.forEach(function (t) { ul.append(h('li', {}, t)); });
     }
   }
+  function isZip(f) { return /\.zip$/i.test(f.name) || /zip/.test(f.type || ''); }
   $('#pack').addEventListener('change', function (ev) {
-    var f = ev.target.files && ev.target.files[0], st = $('#packState');
+    var all = Array.prototype.slice.call(ev.target.files || []), st = $('#packState');
     ev.target.value = '';
+    if (!all.length) return;
+    var zips = all.filter(isZip), sons = all.filter(function (f) { return !isZip(f); });
+    if (sons.length) {
+      addSamples(sons);
+      $('#sampleNote').hidden = false;
+      $('#sampleNote').textContent = (sons.length > 1 ? sons.length + ' enregistrements ajoutés' : '« ' + sons[0].name + ' » ajouté') +
+        ' ci-dessous. Pour créer la voix de papa à partir de cet enregistrement, envoyez-le dans le carnet Colab (étape 3), puis importez ici le fichier voix-de-papa.zip qu\'il produit. Pour faire jouer un enregistrement sur une phrase précise, utilisez « Son » dans « Ma vie » ou « Associer un son » sur une tuile.';
+      st.textContent = sons.length > 1 ? 'Enregistrements ajoutés à la vérification, plus bas.' : 'Enregistrement ajouté à la vérification, plus bas.';
+    }
+    var f = zips[0];
     if (!f) return;
     if (!window.JSZip) { st.textContent = 'Impossible de lire le fichier : la bibliothèque zip n\'a pas pu se charger. Vérifiez la connexion et rechargez la page.'; return; }
     st.textContent = 'Lecture de ' + f.name + '…';
@@ -671,6 +731,51 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     });
   });
 
+  /* ---------- vrais enregistrements associés à une phrase ---------- */
+  var assocTarget = null, assocEl = $('#assocFile');
+  var recArmed = null;
+  function recAction(texte) {
+    if (hasReal(texte)) {
+      var k = cle(texte);
+      if (recArmed !== k) { recArmed = k; flash('Touchez encore « Retirer le son » pour confirmer.'); setTimeout(function () { if (recArmed === k) recArmed = null; }, 5000); return; }
+      recArmed = null;
+      setReal(texte, null); refreshReal();
+      dbPut('vrais', k, null).catch(function () {});
+      flash('Enregistrement retiré de « ' + texte + ' ».');
+      return;
+    }
+    assocTarget = texte;
+    assocEl.value = '';
+    assocEl.click();
+  }
+  function flash(msg) { $('#realState').textContent = msg; saidEl.classList.add('idle'); saidEl.textContent = msg; againBtn.hidden = true; stopBtn.hidden = true; srcEl.hidden = true; }
+  assocEl.addEventListener('change', function () {
+    var f = assocEl.files && assocEl.files[0], texte = assocTarget;
+    assocEl.value = ''; assocTarget = null;
+    if (!f || !texte) return;
+    if (isZip(f)) { flash('Ce fichier est un pack zip : importez-le dans l\'onglet Voix.'); return; }
+    var rec = { texte: texte, nom: f.name, blob: f.slice(0, f.size, f.type || 'audio/mp4') };
+    setReal(texte, rec); refreshReal();
+    var test = new Audio(); test.preload = 'metadata';
+    test.onerror = function () { flash('« ' + f.name + ' » est associé à « ' + texte + ' », mais cet appareil ne sait peut-être pas le lire. Si rien ne s\'entend, convertissez-le en m4a ou mp3.'); };
+    test.onloadedmetadata = function () { flash('« ' + f.name + ' » sera joué pour « ' + texte + ' ».'); };
+    test.src = realUrls[cle(texte)];
+    dbPut('vrais', cle(texte), rec).catch(function () {
+      flash('Enregistrement associé pour cette visite seulement : cet iPad n\'a pas permis de le garder.');
+    });
+  });
+  function renderReals() {
+    var ul = $('#realList'); ul.textContent = '';
+    var keys = Object.keys(reals);
+    if (!keys.length) { ul.append(h('li', {}, h('span', { style: 'font-weight:400' }, 'Aucun pour l\'instant.'))); return; }
+    keys.forEach(function (k) {
+      var r = reals[k];
+      ul.append(h('li', {}, h('span', {}, r.texte), h('small', { class: 'state' }, r.nom),
+        h('button', { class: 'small-btn', onclick: function () { speak(r.texte); } }, 'Écouter'),
+        h('button', { class: 'small-btn', onclick: function () { recAction(r.texte); } }, 'Retirer le son')));
+    });
+  }
+
   /* ---------- tabs ---------- */
   var TABS = ['parler', 'conversation', 'ma-vie', 'voix'];
   function route() {
@@ -682,7 +787,12 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   window.addEventListener('hashchange', route);
 
   renderPills(); renderTiles(); renderThread(); renderLife(); renderPack(); route();
+  renderReals();
   dbAll().then(function (blobs) { if (Object.keys(blobs).length) setPack(blobs); }).catch(function () {});
+  dbAll('vrais').then(function (recs) {
+    Object.keys(recs).forEach(function (k) { if (recs[k] && recs[k].blob) setReal(recs[k].texte, recs[k]); });
+    if (Object.keys(recs).length) refreshReal();
+  }).catch(function () {});
 })();
 </script>
 
