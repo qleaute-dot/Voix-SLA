@@ -111,3 +111,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Plancher de bruit : -37,7 / -37,9 / -39,1 / -45,5 dB.
   Cycle guidé : 60 phrases inventées × 3 prises (A, t 0,7) → Applio doux + débruitage
   (pipe/p60.sh). App : section « Choisir la meilleure prise » (db prises/<id> : choix, etoiles).
+- 12:50 UTC Avis anti-grésillement : traitements 3 et 4 (Applio doux + nettoyage / + débruitage)
+  = 0 signalement de son métallique (contre 3 au réglage actuel). « Choisir la meilleure prise »
+  publié avec 2 prises sur 60 phrases (3e prise en cours). Limite de 512 fichiers par version
+  de l'artefact atteinte : anciens panels notés retirés (154 fichiers).
