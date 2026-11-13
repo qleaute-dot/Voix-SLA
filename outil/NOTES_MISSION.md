@@ -135,3 +135,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Test : 14 phrases (4 vraies c001/c024/c038/c054 + 10 « aucune » dont 4 questions), 3 prises,
   chaque prise = autre extrait de référence (c021, c058, c039 question / c056) → pipe/gen_f5b.py,
   puis pipe/f5_post.sh (choix mots+timbre, Applio doux + débruitage, version actuelle en face).
+- 16:00 UTC Utilisateur : « ne cherche pas à t'économiser ». Préparé l'entraînement F5 sur
+  66 extraits (c000 adresse exclu) : f5/lib/python3.11/data/papa_custom, pipe/ft_f5.sh
+  (lr 1e-5, lots de 3000 trames, sauvegarde model_last toutes les 60 mises à jour),
+  lancé automatiquement après le test. Swap supprimé (place disque pour les sauvegardes).
