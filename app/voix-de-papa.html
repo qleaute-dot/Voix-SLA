@@ -260,6 +260,14 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 
   <section class="view" id="v-voix" hidden>
     <h1>Voix</h1>
+    <div class="card" id="prCard" hidden>
+      <h2>Choisir la meilleure prise</h2>
+      <p>Chaque phrase a été dite 3 fois. Écoutez les 3 prises et choisissez celle qui sonne le plus comme papa, puis donnez-lui une note. Les prises notées 4 ou 5 serviront à entraîner la voix.</p>
+      <div class="row" style="margin:6px 0 12px"><span class="state" id="prCount"></span></div>
+      <div id="prList" class="cmp-list"></div>
+      <div class="row"><button class="small-btn" id="prMore" hidden>Afficher 10 phrases de plus</button></div>
+    </div>
+
     <div class="card" id="cmpCard" hidden>
       <h2>Comparer : sa vraie voix et le clone</h2>
       <p>Pour chaque phrase, écoutez sa vraie voix puis le clone, et dites si le clone est bon. Si non, précisez ce qui ne va pas. Chaque avis est enregistré tout de suite et aide Claude à améliorer la voix.</p>
@@ -1049,8 +1057,53 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     }).catch(function () {});
   }
 
+  // Choisir la meilleure prise : prises/manifest.json ; choix dans db prises/<id>
+  var pr = { man: null, choix: {}, shown: 10, touched: {} };
+  function savePr(ph, patch) {
+    var a = Object.assign({}, pr.choix[ph.id] || {}, patch, { texte: ph.texte, date: new Date().toISOString() });
+    pr.choix[ph.id] = a; pr.touched[ph.id] = true; renderPr();
+    cap('db').then(function (db) { if (!db) throw 0; return db.collection('prises').doc(ph.id).set(a); })
+      .catch(function () { $('#prCount').textContent = 'Choix non enregistré : ouvrez l\'application dans claude.ai.'; });
+  }
+  function renderPr() {
+    var box = $('#prList'); box.textContent = '';
+    var all = pr.man.phrases, done = all.filter(function (x) { return pr.choix[x.id] && pr.choix[x.id].choix != null; });
+    $('#prCount').textContent = done.length + ' sur ' + all.length + ' phrases choisies';
+    var list = all.filter(function (x) { return pr.touched[x.id] || !(pr.choix[x.id] && pr.choix[x.id].choix != null); });
+    list.slice(0, pr.shown).forEach(function (ph) {
+      var a = pr.choix[ph.id] || {};
+      var plays = h('div', { class: 'plays' }), picks = h('div', { class: 'votes' });
+      ph.prises.forEach(function (f, k) {
+        plays.append(h('button', { onclick: function () { playUrl(f, ph.texte, true); } }, '▶ Prise ' + (k + 1)));
+        picks.append(h('button', { class: 'ok', 'aria-pressed': String(a.choix === k), onclick: function () { savePr(ph, { choix: k }); } }, 'Choisir ' + (k + 1)));
+      });
+      picks.append(h('button', { class: 'ko', 'aria-pressed': String(a.choix === -1), onclick: function () { savePr(ph, { choix: -1, etoiles: null }); } }, 'Aucune'));
+      var card = h('div', { class: 'pair' + (a.choix >= 0 ? ' bon' : a.choix === -1 ? ' pas_bon' : '') + (a.etoiles >= 4 ? ' top' : '') },
+        h('div', { class: 'ptxt' }, '« ' + ph.texte + ' »'), plays, picks);
+      if (a.choix >= 0) {
+        var st = h('div', { class: 'stars', role: 'group', 'aria-label': 'Note de la prise choisie' });
+        [1, 2, 3, 4, 5].forEach(function (n) { st.append(h('button', { 'aria-pressed': String(a.etoiles === n), onclick: function () { savePr(ph, { etoiles: n }); } }, String(n))); });
+        card.append(h('span', { class: 'meta2' }, 'Note de la prise ' + (a.choix + 1) + ' : 1 juste acceptable · 5 on dirait vraiment lui'), st);
+      }
+      box.append(card);
+    });
+    if (!list.length) box.append(h('div', { class: 'empty' }, 'Toutes les phrases sont choisies. Merci ! Claude s\'en sert pour entraîner la voix.'));
+    $('#prMore').hidden = list.length <= pr.shown;
+  }
+  $('#prMore').addEventListener('click', function () { pr.shown += 10; renderPr(); });
+  function loadPr() {
+    fetch('prises/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
+      if (!man || !man.phrases || !man.phrases.length) return;
+      pr.man = man; $('#prCard').hidden = false; renderPr();
+      cap('db').then(function (db) { return db ? db.collection('prises').get() : null; }).then(function (snap) {
+        if (snap) snap.docs.forEach(function (d) { pr.choix[d.id] = d.data(); });
+        renderPr();
+      }).catch(function () {});
+    }).catch(function () {});
+  }
+
   function loadPublished() {
-    loadCmp(); loadVraies(); loadSons();
+    loadPr(); loadCmp(); loadVraies(); loadSons();
     fetch('essais/manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (man) {
       if (!man || !man.versions || !man.versions.length) return;
       $('#trialCard').hidden = false;

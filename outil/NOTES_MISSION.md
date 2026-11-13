@@ -105,3 +105,9 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   en dictions A, E et A+E (vitesse 0,93), meilleure de 2 prises, Applio ép. 20.
 - 09:25 UTC Panel « phrases nouvelles » publié (20 × A, E, A+E). Mots mal dits (Whisper) :
   A 3/20, E 7/20, A+E 7/20.
+- 11:00 UTC Avis phrases inventées : A 11/20 (moy 2,7), A+E 9/20, E 8/20 ; intonation = défaut n°1.
+  Grésillement : panel anti-grésillement publié (8 phrases × 4 : actuel ; Applio doux
+  index 0,3 protect 0,5 ; + nettoyage Applio « light » ; + ffmpeg highpass/afftdn/deesser/lowpass).
+  Plancher de bruit : -37,7 / -37,9 / -39,1 / -45,5 dB.
+  Cycle guidé : 60 phrases inventées × 3 prises (A, t 0,7) → Applio doux + débruitage
+  (pipe/p60.sh). App : section « Choisir la meilleure prise » (db prises/<id> : choix, etoiles).
