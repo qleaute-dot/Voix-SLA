@@ -100,3 +100,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   A 76, B 77, C 76, D 76, E 76. À départager à l'oreille (intonation, rythme).
   Remote Control : aucun dossier visible depuis le cloud ; proposé une session locale
   sur le PC de l'utilisateur (carte graphique) — en attente de son retour.
+- 09:20 UTC Avis 5 dictions : A 10/12 bon (moy 3,2), E 8/12 (moy 3,5, trois 5/5), C 7/12,
+  B 6/12, D 5/12. Lancé : 20 phrases inventées « à la manière de papa » (pipe/nouvelles.json)
+  en dictions A, E et A+E (vitesse 0,93), meilleure de 2 prises, Applio ép. 20.
