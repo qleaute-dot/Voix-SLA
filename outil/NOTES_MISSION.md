@@ -76,3 +76,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 00:06 UTC La machine a redémarré vers 23:40 (tout arrêté, fichiers conservés). Applio
   relancé de zéro via pipe/relance.sh (idempotent, reprend aux sauvegardes). Gardes
   programmées 01:15, 02:30, 03:30, 04:30 ; bilan 05:15 UTC.
+- 00:24 UTC 2e redémarrage (machine récupérée quand la session est inactive sans tâche
+  suivie). Parade : Applio lancé par relance.sh + une tâche d'attente suivie (≤ 1 h 55)
+  réarmée à chaque fin, pour garder la session active.
