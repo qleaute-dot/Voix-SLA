@@ -128,3 +128,10 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Après Applio : fin +0,8 (contre +1,9). Test publié en tête de « Choisir la meilleure prise »
   (version 25) : 23 phrases « (Test mélodie) », 2 prises au hasard ; correspondance dans
   /root/voix/mel/ordre.json (actuelle / melodie).
+- 15:40 UTC Avis test mélodie : actuelle 10, corrigée 6, aucune 7 → correction abandonnée.
+  Bilan 60 phrases : 20 « aucune », notes surtout 1-2, un seul 4 → plafond XTTS + Applio.
+  Feu vert utilisateur : tester F5-TTS (français, au vol) + Applio, « pousser un peu plus ».
+  Ménage disque (seedvc, ft2 ép. 3, rvcout, qz, cache uv). Env f5 (torch partagé avec rvc via .pth).
+  Test : 14 phrases (4 vraies c001/c024/c038/c054 + 10 « aucune » dont 4 questions), 3 prises,
+  chaque prise = autre extrait de référence (c021, c058, c039 question / c056) → pipe/gen_f5b.py,
+  puis pipe/f5_post.sh (choix mots+timbre, Applio doux + débruitage, version actuelle en face).
