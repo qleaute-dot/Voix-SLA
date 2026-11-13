@@ -79,3 +79,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 00:24 UTC 2e redémarrage (machine récupérée quand la session est inactive sans tâche
   suivie). Parade : Applio lancé par relance.sh + une tâche d'attente suivie (≤ 1 h 55)
   réarmée à chaque fin, pour garder la session active.
+- 01:50 UTC Conversion Applio réparée (onnxruntime manquant ; sorties relatives allaient
+  dans /root/applio). Époque 10 — timbre moyen : clone XTTS + Applio 74, Qwen + Applio 72,
+  voix du fils + Applio 56 (fils brut 33 ; phrases communes ≈ 63). Panel époque 10 publié.
