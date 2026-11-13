@@ -164,3 +164,9 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Comparer, version « vid », « Bon » = c'est bien lui. Séries nA/nE/nAE/b2/b3 retirées (notées).
   Entraînement XTTS ft3 (5 époques, sauvegarde ép. 5) puis pipe/nuit_ft3.sh : 20 phrases neuves
   (pipe/n3_items.json, dont 9 questions/exclamations), ft2 vs ft3, meilleure de 3, Applio doux.
+- 19:45 UTC Utilisateur : « je ne veux pas que l'apprentissage se fasse sur des morceaux de voix
+  qui ne sont pas les siens ». Entraînement ft3 arrêté. Tri strict par fenêtres de 2 s
+  (pipe/strict2_video.py) → 55 extraits w000-w054 (2,8 min), publiés (version 29) à vérifier ;
+  l'encodeur n'est pas fiable sur de courts morceaux, donc SEULS les extraits confirmés « Bon »
+  entreront dans l'entraînement (pipe/ds_valide.py → ds/train_ok.csv). En attendant, le
+  processeur sert à l'entraînement F5 sur les extraits d'origine (sûrs).
