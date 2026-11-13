@@ -73,3 +73,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   sauvegarde Applio perdue (aucune encore). Relancé seul (rvc3.log), sauvegarde toutes les
   10 époques, ≈ 4,5 min/époque ; swap 5 Go. rvc_watch.sh convertit à chaque sauvegarde.
   Leçon : ne rien faire tourner en parallèle d'Applio sur cette machine.
+- 00:06 UTC La machine a redémarré vers 23:40 (tout arrêté, fichiers conservés). Applio
+  relancé de zéro via pipe/relance.sh (idempotent, reprend aux sauvegardes). Gardes
+  programmées 01:15, 02:30, 03:30, 04:30 ; bilan 05:15 UTC.
