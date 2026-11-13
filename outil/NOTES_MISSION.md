@@ -96,3 +96,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   l'ancien ft1 avait été effacé pour le disque). Variantes de diction (pipe/variantes.sh) :
   A ép.5 réf. courtes t0,65 ; B ép.3 ; C réf. longue 30 s t0,7 ; D t0,85 ; E vitesse 0,92 ;
   12 phrases, meilleure de 2 prises, puis Applio ép. 20 → pipe/panel_var.py.
+- 08:45 UTC Panel des 5 dictions publié (12 phrases × 5, Applio ép. 20) : timbre moyen
+  A 76, B 77, C 76, D 76, E 76. À départager à l'oreille (intonation, rythme).
+  Remote Control : aucun dossier visible depuis le cloud ; proposé une session locale
+  sur le PC de l'utilisateur (carte graphique) — en attente de son retour.
