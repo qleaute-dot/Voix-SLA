@@ -103,3 +103,5 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 09:20 UTC Avis 5 dictions : A 10/12 bon (moy 3,2), E 8/12 (moy 3,5, trois 5/5), C 7/12,
   B 6/12, D 5/12. Lancé : 20 phrases inventées « à la manière de papa » (pipe/nouvelles.json)
   en dictions A, E et A+E (vitesse 0,93), meilleure de 2 prises, Applio ép. 20.
+- 09:25 UTC Panel « phrases nouvelles » publié (20 × A, E, A+E). Mots mal dits (Whisper) :
+  A 3/20, E 7/20, A+E 7/20.
