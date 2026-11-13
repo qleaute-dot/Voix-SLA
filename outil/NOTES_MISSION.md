@@ -143,3 +143,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   « Essai A » = F5 + Applio, « Essai B » = actuelle (XTTS ép. 5 + Applio doux + débruitage).
   Timbre mesuré après Applio : F5 60, actuelle 69 (papa réel ≈ 79) ; mots : 3 phrases
   avec une faute (p05, p22, c054). Entraînement F5 démarré (15 mises à jour par époque).
+- 17:00 UTC Entraînement F5 tué (mémoire) au 1er lancement. Corrigé : 0 processus de chargement,
+  lots de 2000 trames, swap 6 Go recréé, sauvegarde « poids seuls » (patch trainer.py, sans
+  optimiseur, 1,35 Go, clé EMA pour l'inférence). ≈ 7,5 s/màj, 26 màj/époque (≈ 3,3 min).
+  pipe/f5_snap.sh copie model_last toutes les 300 màj dans /root/voix/f5snap (2 gardées).
