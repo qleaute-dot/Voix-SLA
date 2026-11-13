@@ -173,3 +173,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 19:25 UTC Vérification utilisateur : 54 « c'est bien lui, seul », 1 « autre voix ou doute ».
   F5 arrêté (sauvegarde effacée faute de place). ds/train_ok.csv = 66 + 1 (c000) + 54 extraits
   vidéo confirmés (+2,7 min). ft3 relancé (5 époques, sauvegarde ép. 5) → pipe/nuit_ft3.sh.
+- 19:45 UTC Utilisateur : des voix se superposent parfois. Entraînement mis en pause, nouvelle
+  vérification : 44 « lui seul », 11 écartés. ds/train_ok.csv = 67 + 44 extraits (+2,3 min).
+  ft3 relancé puis pipe/nuit_ft3.sh (20 phrases neuves ft2 vs ft3) → panel à publier au matin.
