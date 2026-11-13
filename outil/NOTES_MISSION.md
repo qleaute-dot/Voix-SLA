@@ -151,3 +151,9 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   (base64 = +33 %). Envoi partiel (63 morceaux) supprimé avec l'accord de l'utilisateur.
   App : vidéos envoyées en morceaux bruts de 16 Mo (type video/mp4, testé côté serveur),
   envois/<id> enregistré après chaque morceau (champ fin = true à la fin, codage brut/base64).
+- 18:50 UTC Go vidéo. Entraînement F5 arrêté (sauvegarde gardée : /root/voix/f5snap/u960.pt).
+  Vidéo reçue complète (envois/e1794595165048, 52 morceaux bruts, 865 Mo, 33 min 53 s) →
+  son seul /root/voix/video/son24.wav (vidéo effacée localement). Transcription Whisper
+  large-v3-turbo (pipe/transcrire_video.py), découpe 2-12 s (pipe/decoupe_video.py : écarte
+  adresse/infos privées, doublons de l'ancien extrait et phrases test), filtre de voix
+  (pipe/filtre_voix.py : seuil = 5e centile de ses vrais extraits − 0,03).
