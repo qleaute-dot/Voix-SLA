@@ -147,3 +147,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   lots de 2000 trames, swap 6 Go recréé, sauvegarde « poids seuls » (patch trainer.py, sans
   optimiseur, 1,35 Go, clé EMA pour l'inférence). ≈ 7,5 s/màj, 26 màj/époque (≈ 3,3 min).
   pipe/f5_snap.sh copie model_last toutes les 300 màj dans /root/voix/f5snap (2 gardées).
+- 18:45 UTC Vidéo de 800 Mo (33 min) : envoi bloqué par le quota de 1 Go des pièces jointes
+  (base64 = +33 %). Envoi partiel (63 morceaux) supprimé avec l'accord de l'utilisateur.
+  App : vidéos envoyées en morceaux bruts de 16 Mo (type video/mp4, testé côté serveur),
+  envois/<id> enregistré après chaque morceau (champ fin = true à la fin, codage brut/base64).

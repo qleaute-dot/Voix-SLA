@@ -895,7 +895,9 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     for (var i = 0; i < bytes.length; i += CH) out.push(String.fromCharCode.apply(null, bytes.subarray(i, i + CH)));
     return btoa(out.join(''));
   }
-  var PART = 12 * 1024 * 1024;
+  var PART = 12 * 1024 * 1024, PART_BRUT = 16 * 1024 * 1024;
+  function estVideo(f) { return /^video\//.test(f.type || '') || /\.(mp4|mov|m4v|3gp)$/i.test(f.name || ''); }
+  function partDe(f) { return estVideo(f) ? PART_BRUT : PART; }
   $('#sendBtn').addEventListener('click', function () {
     var st = $('#sendState'), btn = $('#sendBtn');
     if (!sendFiles.length) return;
@@ -903,21 +905,23 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     Promise.all([cap('assets'), cap('db')]).then(function (c) {
       var assets = c[0], db = c[1];
       if (!assets || !db) throw { code: 'unavailable' };
-      var envoi = { date: new Date().toISOString(), fichiers: [], textes: allTexts() };
-      var chain = Promise.resolve(), total = sendFiles.reduce(function (n, f) { return n + Math.ceil(f.size / PART); }, 0), done = 0;
+      var envoi = { date: new Date().toISOString(), fichiers: [], textes: allTexts() }, envoiId = 'e' + Date.now();
+      var chain = Promise.resolve(), total = sendFiles.reduce(function (n, f) { return n + Math.ceil(f.size / partDe(f)); }, 0), done = 0;
       sendFiles.forEach(function (f) {
-        var entry = { nom: f.name, taille: f.size, type: f.type || '', parts: [] };
+        // Vidéo : morceaux envoyés tels quels (pas de gonflement base64) ; autres fichiers : base64 en texte
+        var brut = estVideo(f);
+        var entry = { nom: f.name, taille: f.size, type: f.type || '', codage: brut ? 'brut' : 'base64', parts: [] };
         envoi.fichiers.push(entry);
-        for (var off = 0; off < f.size; off += PART) (function (o) {
+        for (var off = 0; off < f.size; off += partDe(f)) (function (o) {
           chain = chain.then(function () {
             st.textContent = 'Envoi ' + (done + 1) + ' sur ' + total + '…';
-            return f.slice(o, o + PART).arrayBuffer();
+            return f.slice(o, o + partDe(f)).arrayBuffer();
           }).then(function (buf) {
-            return assets.upload(new Blob([b64(buf)], { type: 'text/plain' }));
-          }).then(function (r) { entry.parts.push(r.id); done++; });
+            return assets.upload(brut ? new Blob([buf], { type: 'video/mp4' }) : new Blob([b64(buf)], { type: 'text/plain' }));
+          }).then(function (r) { entry.parts.push(r.id); done++; envoi.fin = false; return db.collection('envois').doc(envoiId).set(envoi); });
         })(off);
       });
-      return chain.then(function () { return db.collection('envois').doc('e' + Date.now()).set(envoi); });
+      return chain.then(function () { envoi.fin = true; return db.collection('envois').doc(envoiId).set(envoi); });
     }).then(function () {
       st.textContent = '';
       sendFiles = []; $('#sendList').textContent = '';
@@ -928,8 +932,8 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       var code = e && e.code;
       st.textContent = code === 'unavailable' || code === 'not_granted'
         ? 'Envoi impossible dans cette vue. Ouvrez l\'application dans claude.ai ou dans l\'application Claude, avec votre compte.'
-        : code === 'too_large' || code === 'quota_exceeded'
-          ? 'Le fichier est trop gros pour l\'espace de l\'application. Essayez un fichier m4a ou mp3 plutôt que wav.'
+        : code === 'too_large' || code === 'quota_exceeded' || code === 'quota_or_state'
+          ? 'L\'espace de l\'application est plein (1 Go au total). Prévenez Claude dans la conversation : il libérera de la place.'
           : 'L\'envoi a échoué (' + (code || 'erreur') + '). Réessayez.';
     });
   });
