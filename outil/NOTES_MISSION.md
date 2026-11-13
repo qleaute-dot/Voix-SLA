@@ -115,3 +115,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   = 0 signalement de son métallique (contre 3 au réglage actuel). « Choisir la meilleure prise »
   publié avec 2 prises sur 60 phrases (3e prise en cours). Limite de 512 fichiers par version
   de l'artefact atteinte : anciens panels notés retirés (154 fichiers).
+- 13:00 UTC 3e prise publiée (60 × 3). Préparé pipe/ds_guide.py (vraies phrases + prises
+  choisies notées ≥ 4, les 5/5 comptées deux fois → ds/train_guide.csv) et TRAIN_CSV dans
+  train_xtts.py. Après les choix : ArtifactData list prises → /root/voix/avis_pr, puis
+  ds_guide.py, puis entraînement ft3, puis panel de phrases inédites ancien vs nouveau.

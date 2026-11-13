@@ -14,7 +14,7 @@ epochs, lr, out = int(sys.argv[1]), float(sys.argv[2]), sys.argv[3]
 X = glob.glob("/root/.cache/huggingface/hub/models--tts-hub--XTTS-v2/snapshots/*/")[0]
 DVAE = glob.glob("/root/.cache/huggingface/hub/models--coqui--XTTS-v2/snapshots/*/dvae.pth")[0]
 ds = BaseDatasetConfig(formatter="coqui", dataset_name="papa", path="/root/voix/ds",
-                       meta_file_train="/root/voix/ds/train.csv", meta_file_val="/root/voix/ds/eval.csv", language="fr")
+                       meta_file_train=os.environ.get("TRAIN_CSV", "/root/voix/ds/train.csv"), meta_file_val="/root/voix/ds/eval.csv", language="fr")
 args = GPTArgs(max_conditioning_length=132300, min_conditioning_length=66150, debug_loading_failures=False,
                max_wav_length=255995, max_text_length=250, mel_norm_file=X + "mel_stats.pth", dvae_checkpoint=DVAE,
                xtts_checkpoint=X + "model.pth", tokenizer_file=X + "vocab.json", gpt_num_audio_tokens=1026,
