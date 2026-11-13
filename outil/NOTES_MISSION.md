@@ -185,3 +185,9 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   n3b = ft2 ; 20 phrases neuves. Mesures : timbre 65,6 (ft3) / 64,9 (ft2) ; phrases à mots faux
   4/20 (ft3) / 2/20 (ft2). Prises m* (test mélodie, notées) retirées (limite 512 fichiers).
   pipe/pub_n3.py ajoutera n3c (ft3 + Applio papa2) et n3d (F5) au matin.
+
+## 13/11 ~22h UTC — notes à l'aveugle n3 (20 phrases neuves)
+- ft3 (avec vidéo) : 8 bons / 20, étoiles 13 ; ft2 : 8 bons / 20, étoiles 13 → égalité.
+- Complémentaires : au moins une version « bon » sur 13 phrases ; les deux mauvaises sur 7 (q03 q04 q09 q10 q13 q19 q20).
+- Défaut dominant restant : Accent (q09 q10 q19 q20), puis Intonation.
+- Conséquence : pour l'appli, générer plusieurs prises par phrase avec les deux modèles et laisser l'oreille choisir.
