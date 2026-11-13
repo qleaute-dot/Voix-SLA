@@ -191,3 +191,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - Complémentaires : au moins une version « bon » sur 13 phrases ; les deux mauvaises sur 7 (q03 q04 q09 q10 q13 q19 q20).
 - Défaut dominant restant : Accent (q09 q10 q19 q20), puis Intonation.
 - Conséquence : pour l'appli, générer plusieurs prises par phrase avec les deux modèles et laisser l'oreille choisir.
+- 22:40 UTC : Applio papa2 (papa.wav + 44 extraits vidéo, 20 époques) fini, index régénéré.
+  Timbre mesuré sur n3 : ft2+papa 0.649, ft3+papa 0.656, ft3+papa2 0.607 (en baisse ; à confirmer à l'oreille).
+  F5 : dataset 0.15 h, fine-tune lancé.
