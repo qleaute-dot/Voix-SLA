@@ -139,3 +139,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   66 extraits (c000 adresse exclu) : f5/lib/python3.11/data/papa_custom, pipe/ft_f5.sh
   (lr 1e-5, lots de 3000 trames, sauvegarde model_last toutes les 60 mises à jour),
   lancé automatiquement après le test. Swap supprimé (place disque pour les sauvegardes).
+- 17:00 UTC Test F5 au vol + Applio publié (version 26) en tête de Comparer : 14 phrases,
+  « Essai A » = F5 + Applio, « Essai B » = actuelle (XTTS ép. 5 + Applio doux + débruitage).
+  Timbre mesuré après Applio : F5 60, actuelle 69 (papa réel ≈ 79) ; mots : 3 phrases
+  avec une faute (p05, p22, c054). Entraînement F5 démarré (15 mises à jour par époque).
