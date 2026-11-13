@@ -89,3 +89,10 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   (époques 10/20/30/40). Meilleure : époque 20. Panel publié avec l'époque 20 :
   clone XTTS + Applio (19 phrases, 77), Qwen + Applio (5, 73), voix du fils + Applio (6, 66).
   Applio continue (≈ époque 50) ; Seed-VC écarté ; plusieurs redémarrages de la machine.
+- 06:30 UTC Avis panel époque 20 : clone XTTS + Applio 6/19 « bon » (2-3/5) ; timbre
+  signalé 4/19, accent 2/19 seulement (contre 55 et 60/71 avant) ; restent intonation 12,
+  rythme 8. Qwen + Applio 0/5, voix du fils + Applio 0/6 → abandonnés.
+  Applio arrêté (meilleur : époque 20). XTTS réentraîné (ft2, sauvegardes ép. 3 et 5 ;
+  l'ancien ft1 avait été effacé pour le disque). Variantes de diction (pipe/variantes.sh) :
+  A ép.5 réf. courtes t0,65 ; B ép.3 ; C réf. longue 30 s t0,7 ; D t0,85 ; E vitesse 0,92 ;
+  12 phrases, meilleure de 2 prises, puis Applio ép. 20 → pipe/panel_var.py.

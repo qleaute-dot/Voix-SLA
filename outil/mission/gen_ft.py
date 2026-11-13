@@ -10,7 +10,8 @@ cfg = XttsConfig(); cfg.load_json(X + "config.json")
 m = Xtts.init_from_config(cfg)
 m.load_checkpoint(cfg, checkpoint_dir=X, checkpoint_path=ck, vocab_path=X + "vocab.json", use_deepspeed=False)
 m.eval()
-refs = json.load(open("/root/voix/refs_gardees.json"))
+refs = json.load(open(os.environ.get("REFS", "/root/voix/refs_gardees.json")))
+SPEED = float(os.environ.get("SPEED", "1.0"))
 gpt, spk = m.get_conditioning_latents(audio_path=refs, gpt_cond_len=30, gpt_cond_chunk_len=6, max_ref_length=30)
 os.makedirs(out, exist_ok=True)
 for it in items:
@@ -18,6 +19,6 @@ for it in items:
         f = f"{out}/{it['id']}_{k}.wav"
         if os.path.exists(f): continue
         torch.manual_seed(1000 * k + 7); t = time.time()
-        o = m.inference(it["texte"], "fr", gpt, spk, temperature=temp, repetition_penalty=5.0, top_p=0.85, enable_text_splitting=False)
+        o = m.inference(it["texte"], "fr", gpt, spk, temperature=temp, repetition_penalty=5.0, top_p=0.85, speed=SPEED, enable_text_splitting=False)
         w = np.asarray(o["wav"], dtype="float32"); w = w / (np.abs(w).max() or 1) * 0.89
         sf.write(f, w, 24000); print("gen", it["id"], k, round(time.time() - t, 1), flush=True)
