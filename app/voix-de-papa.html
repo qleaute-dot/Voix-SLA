@@ -989,14 +989,27 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   }
   function renderCmp() {
     var box = $('#cmpList'); box.textContent = '';
-    var all = cmp.man.paires, done = all.filter(function (p) { return cmp.avis[p.id] && cmp.avis[p.id].note; });
+    var all = cmp.man.paires, vf = all.filter(function (p) { return p.verif; }), vfDone = vf.filter(function (p) { return cmp.avis[p.id] && cmp.avis[p.id].note; }).length;
+    all = all.filter(function (p) { return !p.verif; }); var done = all.filter(function (p) { return cmp.avis[p.id] && cmp.avis[p.id].note; });
     var bons = done.filter(function (p) { return cmp.avis[p.id].note === 'bon'; }).length;
     var notes = done.map(function (p) { return cmp.avis[p.id].etoiles; }).filter(function (n) { return n; });
     var moy = notes.length ? (notes.reduce(function (x, y) { return x + y; }, 0) / notes.length).toFixed(1).replace('.', ',') : null;
-    $('#cmpCount').textContent = done.length + ' sur ' + all.length + ' notées · ' + bons + ' bonne' + (bons > 1 ? 's' : '') + (moy ? ' · moyenne ' + moy + '/5' : '');
+    $('#cmpCount').textContent = done.length + ' sur ' + all.length + ' notées · ' + bons + ' bonne' + (bons > 1 ? 's' : '') + (moy ? ' · moyenne ' + moy + '/5' : '') + (vf.length ? ' · extraits vérifiés : ' + vfDone + ' sur ' + vf.length : '');
+    all = vf.concat(all);
     var list = cmp.showAll ? all : all.filter(function (p) { return cmp.touched[p.id] || !(cmp.avis[p.id] && cmp.avis[p.id].note); });
     list.slice(0, cmp.shown).forEach(function (p) {
       var a = cmp.avis[p.id] || {}, tags = a.defauts || [];
+      if (p.verif) {  // vérification d'un vrai extrait de papa : oui / non, sans note
+        box.append(h('div', { class: 'pair' + (a.note ? ' ' + a.note : '') },
+          h('div', { class: 'ptxt' }, '« ' + p.texte + ' »'),
+          h('span', { class: 'meta2' }, 'Vrai enregistrement tiré de la vidéo. Entend-on uniquement papa ?'),
+          h('div', { class: 'plays' },
+            h('button', { class: 'real', onclick: function () { playUrl('comparer/' + p.clone, p.texte, 'vrai'); } }, '▶ Écouter l\'extrait')),
+          h('div', { class: 'votes' },
+            h('button', { class: 'ok', 'aria-pressed': String(a.note === 'bon'), onclick: function () { saveAvis(p, { note: 'bon', defauts: [], etoiles: null }); } }, '✓ C\'est bien lui, seul'),
+            h('button', { class: 'ko', 'aria-pressed': String(a.note === 'pas_bon'), onclick: function () { saveAvis(p, { note: 'pas_bon', defauts: [], etoiles: null }); } }, '✗ Autre voix ou doute'))));
+        return;
+      }
       var card = h('div', { class: 'pair' + (a.note ? ' ' + a.note : '') + (a.etoiles >= 4 ? ' top' : '') },
         h('div', { class: 'ptxt' }, '« ' + p.texte + ' »'),
         h('div', { class: 'plays' },
