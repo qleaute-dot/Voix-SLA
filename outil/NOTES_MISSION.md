@@ -119,3 +119,12 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   choisies notées ≥ 4, les 5/5 comptées deux fois → ds/train_guide.csv) et TRAIN_CSV dans
   train_xtts.py. Après les choix : ArtifactData list prises → /root/voix/avis_pr, puis
   ds_guide.py, puis entraînement ft3, puis panel de phrases inédites ancien vs nouveau.
+- 14:40 UTC Choix des prises (41/60) : 30 choisies (notes 1×11, 2×14, 3×5), 11 « aucune »,
+  aucun 4 ni 5 → pas d'entraînement guidé sur ces prises. Les « aucune » sont surtout des
+  questions et exclamations. Mesure de mélodie (pipe/f0stats.py, Praat) : papa termine ses
+  phrases à plat (fin −0,0 demi-ton par rapport à sa médiane), le clone remonte (+1 à +2 dt) ;
+  prises notées 3 : +1,1 contre +2,1 pour les notées 1. Correction (pipe/melodie.py) : fin de
+  phrase abaissée en douceur (Praat PSOLA) avant Applio, phrases affirmatives seulement.
+  Après Applio : fin +0,8 (contre +1,9). Test publié en tête de « Choisir la meilleure prise »
+  (version 25) : 23 phrases « (Test mélodie) », 2 prises au hasard ; correspondance dans
+  /root/voix/mel/ordre.json (actuelle / melodie).
