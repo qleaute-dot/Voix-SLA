@@ -157,3 +157,10 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   large-v3-turbo (pipe/transcrire_video.py), découpe 2-12 s (pipe/decoupe_video.py : écarte
   adresse/infos privées, doublons de l'ancien extrait et phrases test), filtre de voix
   (pipe/filtre_voix.py : seuil = 5e centile de ses vrais extraits − 0,03).
+- 19:20 UTC Vidéo = interview de famille (plusieurs voix). Découpe phrase par phrase
+  (pipe/tours_video.py), voix comparée au centre de SA voix dans la vidéo (76 phrases déjà
+  connues : sim p10 0,58, médiane 0,70). Nouvelles phrases ≥ 0,55 → 57 extraits, 3,1 min
+  (pipe/ds_video.py → ds/train_v.csv, 124 extraits). Vérification publiée (version 28) :
+  Comparer, version « vid », « Bon » = c'est bien lui. Séries nA/nE/nAE/b2/b3 retirées (notées).
+  Entraînement XTTS ft3 (5 époques, sauvegarde ép. 5) puis pipe/nuit_ft3.sh : 20 phrases neuves
+  (pipe/n3_items.json, dont 9 questions/exclamations), ft2 vs ft3, meilleure de 3, Applio doux.
