@@ -4,7 +4,8 @@ V = "/root/voix"
 P = "/tmp/claude-0/-home-user-Voix-SLA/1c69338f-3c8e-524c-9834-35b5bd9a198c/scratchpad/publi/comparer"
 items = {x["id"]: x["texte"] for x in json.load(open(f"{V}/pipe/cmp_items.json"))}
 fils_txt = {"f04": "Bonjour ! Je suis content de vous voir.", "f05": "J'ai besoin d'aide, s'il vous plaît.", "f06": "Je vous aime. Merci d'être là."}
-last = sorted([int(d.split("/e")[-1]) for d in glob.glob(f"{V}/rvcout/e*")] or [0])[-1]
+import sys
+last = int(sys.argv[1]) if len(sys.argv) > 1 else sorted([int(d.split("/e")[-1]) for d in glob.glob(f"{V}/rvcout/e*")] or [0])[-1]
 E = f"{V}/rvcout/e{last}"
 VARS = [  # tag, dossier, nom
  ("fA", f"{E}/fils", "Ta voix + Applio"),

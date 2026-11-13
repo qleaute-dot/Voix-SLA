@@ -84,3 +84,8 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   voix du fils + Applio 56 (fils brut 33 ; phrases communes ≈ 63). Panel époque 10 publié.
 - 03:30 UTC Disque plein (48 Mo) : Applio garde chaque G/D (≈ 1,3 Go). Anciennes
   sauvegardes supprimées, menage.sh ne garde que la dernière. Époques 10/20/30 converties.
+- 05:30 UTC Bilan de nuit. Timbre moyen par époque Applio (sim XTTS ×100, papa réel ≈ 79) :
+  fils 64 / 71,5 / 67,5 / 66 ; Qwen 72 / 72,5 / 71 / 72 ; clone XTTS 74 / 77 / 73 / 74
+  (époques 10/20/30/40). Meilleure : époque 20. Panel publié avec l'époque 20 :
+  clone XTTS + Applio (19 phrases, 77), Qwen + Applio (5, 73), voix du fils + Applio (6, 66).
+  Applio continue (≈ époque 50) ; Seed-VC écarté ; plusieurs redémarrages de la machine.
