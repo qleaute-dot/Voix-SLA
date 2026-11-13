@@ -82,3 +82,5 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 01:50 UTC Conversion Applio réparée (onnxruntime manquant ; sorties relatives allaient
   dans /root/applio). Époque 10 — timbre moyen : clone XTTS + Applio 74, Qwen + Applio 72,
   voix du fils + Applio 56 (fils brut 33 ; phrases communes ≈ 63). Panel époque 10 publié.
+- 03:30 UTC Disque plein (48 Mo) : Applio garde chaque G/D (≈ 1,3 Go). Anciennes
+  sauvegardes supprimées, menage.sh ne garde que la dernière. Époques 10/20/30 converties.

@@ -7,3 +7,4 @@ if ! pgrep -f "rvc_train2.py" >/dev/null; then
 fi
 sed -i '/^EXIT/d' pipe/rvc3.log 2>/dev/null
 if ! pgrep -f "rvc_watch.sh" >/dev/null; then (bash pipe/rvc_watch.sh > /dev/null 2>&1 &); echo "relancé guetteur"; fi
+pgrep -f menage.sh >/dev/null || (nohup bash /root/voix/pipe/menage.sh > /dev/null 2>&1 &)
