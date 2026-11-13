@@ -181,3 +181,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   (rvc_ds2 = papa.wav + 44 extraits confirmés, 20 époques, index) → conversion des meilleures prises
   ft3 (n3/out_ft3b) ; F5 réentraîné sur 66 + 44 extraits jusqu'à 04:30 UTC, puis 20 phrases n3
   (n3/raw_f5, 2 prises). Points programmés 23:30 et 05:15 UTC (panel du matin, ids neufs).
+- 21:00 UTC Panel n3 publié (version 31) en tête de Comparer, à l'aveugle : n3a = ft3 (avec vidéo),
+  n3b = ft2 ; 20 phrases neuves. Mesures : timbre 65,6 (ft3) / 64,9 (ft2) ; phrases à mots faux
+  4/20 (ft3) / 2/20 (ft2). Prises m* (test mélodie, notées) retirées (limite 512 fichiers).
+  pipe/pub_n3.py ajoutera n3c (ft3 + Applio papa2) et n3d (F5) au matin.
