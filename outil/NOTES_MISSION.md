@@ -170,3 +170,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   l'encodeur n'est pas fiable sur de courts morceaux, donc SEULS les extraits confirmés « Bon »
   entreront dans l'entraînement (pipe/ds_valide.py → ds/train_ok.csv). En attendant, le
   processeur sert à l'entraînement F5 sur les extraits d'origine (sûrs).
+- 19:25 UTC Vérification utilisateur : 54 « c'est bien lui, seul », 1 « autre voix ou doute ».
+  F5 arrêté (sauvegarde effacée faute de place). ds/train_ok.csv = 66 + 1 (c000) + 54 extraits
+  vidéo confirmés (+2,7 min). ft3 relancé (5 époques, sauvegarde ép. 5) → pipe/nuit_ft3.sh.
