@@ -176,3 +176,8 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 19:45 UTC Utilisateur : des voix se superposent parfois. Entraînement mis en pause, nouvelle
   vérification : 44 « lui seul », 11 écartés. ds/train_ok.csv = 67 + 44 extraits (+2,3 min).
   ft3 relancé puis pipe/nuit_ft3.sh (20 phrases neuves ft2 vs ft3) → panel à publier au matin.
+- 19:30 UTC « Pousse fort » : pipe/nuit2.sh enchaîné après nuit_ft3.sh :
+  ft3 stocké en demi-précision (pipe/demi.py, ft2 déjà 991 Mo) ; Applio « papa2 » réentraîné
+  (rvc_ds2 = papa.wav + 44 extraits confirmés, 20 époques, index) → conversion des meilleures prises
+  ft3 (n3/out_ft3b) ; F5 réentraîné sur 66 + 44 extraits jusqu'à 04:30 UTC, puis 20 phrases n3
+  (n3/raw_f5, 2 prises). Points programmés 23:30 et 05:15 UTC (panel du matin, ids neufs).
