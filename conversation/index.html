@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Conversation">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0B6B73">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icone.png">
+<title>Conversation</title>
+<style>
+:root {
+  --bg: #EDF2F3; --surface: #FFFFFF; --surface-2: #DFE9EB; --fg: #10252B; --muted: #4A6269; --line: #BFD0D4;
+  --accent: #0B6B73; --accent-fg: #FFFFFF; --accent-soft: #D3EBED; --alert: #B3261E; --alert-soft: #FBE4E1;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B171B; --surface: #14262C; --surface-2: #1B323A; --fg: #E7F1F3; --muted: #9DB5BB; --line: #2A444D;
+    --accent: #59C6CC; --accent-fg: #052B2E; --accent-soft: #143A40; --alert: #FF8A80; --alert-soft: #3D1B1A; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B171B; --surface: #14262C; --surface-2: #1B323A; --fg: #E7F1F3; --muted: #9DB5BB; --line: #2A444D;
+  --accent: #59C6CC; --accent-fg: #052B2E; --accent-soft: #143A40; --alert: #FF8A80; --alert-soft: #3D1B1A; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font: 18px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.wrap { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px calc(env(safe-area-inset-bottom, 0px) + 24px); }
+header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+h1 { font-size: 1.3rem; margin: 0; }
+.small { min-height: 44px; padding: 6px 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); font-weight: 700; }
+.small.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.main { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 84px; border-radius: 22px; border: 3px solid var(--accent); background: var(--accent); color: var(--accent-fg); font-size: 1.35rem; font-weight: 800; }
+.main.on { background: var(--surface); color: var(--accent); }
+.main.on .dot { display: inline-block; }
+.main.alert { background: var(--alert); border-color: var(--alert); color: #fff; }
+.dot { display: none; width: 14px; height: 14px; border-radius: 50%; background: var(--alert); animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+.heard { margin: 12px 2px 8px; font-size: 1.1rem; min-height: 1.4em; overflow-wrap: anywhere; }
+.heard b { color: var(--muted); font-weight: 600; }
+.heard i { color: var(--muted); }
+.sugg { display: grid; gap: 10px; }
+.sugg button { text-align: left; min-height: 64px; padding: 12px 16px; border-radius: 18px; border: 2px solid var(--accent); background: var(--surface); font-size: 1.2rem; font-weight: 700; line-height: 1.3; }
+.sugg button:active { background: var(--accent-soft); }
+.sugg button span { display: block; font-size: 12px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+.quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.quick button { min-height: 48px; padding: 6px 16px; border-radius: 24px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.note { background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; margin: 10px 0; font-size: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin: 12px 0; }
+.card h2 { font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.field { width: 100%; min-height: 48px; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); }
+.state { color: var(--muted); font-size: 15px; }
+.thread { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.b { max-width: 88%; padding: 8px 12px; border-radius: 14px; font-size: 16px; overflow-wrap: anywhere; }
+.b.them { align-self: flex-start; background: var(--surface-2); }
+.b.me { align-self: flex-end; background: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.said { position: sticky; top: 0; z-index: 5; background: var(--accent); color: var(--accent-fg); border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; font-weight: 700; font-size: 1.15rem; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Conversation</h1>
+    <button class="small" id="setBtn" aria-expanded="false">Réglages</button>
+  </header>
+
+  <div class="said" id="said" hidden></div>
+
+  <section id="setup" hidden>
+    <div class="card">
+      <h2>1. Sa voix et sa fiche</h2>
+      <p style="margin:0 0 8px">Dans l'application Voix de Papa (Claude), onglet Conversation, touchez « Préparer la conversation mains libres » et enregistrez le fichier. Puis choisissez-le ici. Il reste sur cet appareil.</p>
+      <input type="file" id="packFile" accept=".zip,application/zip">
+      <p class="state" id="packState"></p>
+    </div>
+    <div class="card">
+      <h2>2. Réponses proposées par l'IA (gratuit)</h2>
+      <p style="margin:0 0 8px">Collez ici votre clé Groq (elle commence par gsk_). Elle reste sur cet appareil. Sans clé, des réponses toutes prêtes sont proposées.</p>
+      <input class="field" id="key" type="password" autocomplete="off" placeholder="gsk_…" aria-label="Clé Groq">
+      <div class="row"><button class="small primary" id="keySave">Enregistrer la clé</button><button class="small" id="keyTest">Tester</button></div>
+      <p class="state" id="keyState"></p>
+    </div>
+    <div class="card">
+      <h2>3. Phrases à refaire avec sa voix</h2>
+      <p style="margin:0 0 8px">Les réponses dites avec la voix de l'appareil sont notées ici. Envoyez-les à Claude pour qu'il les refasse avec la voix de papa.</p>
+      <p class="state" id="newState"></p>
+      <div class="row"><button class="small primary" id="newShare">Envoyer à Claude</button><button class="small" id="newClear">Vider la liste</button></div>
+    </div>
+    <div class="card">
+      <h2>Voix de secours</h2>
+      <select class="field" id="voiceSel" aria-label="Voix de secours"></select>
+    </div>
+  </section>
+
+  <section id="conv">
+    <p class="note" id="intro">Touchez « Démarrer » une seule fois : l'appareil écoute la personne en continu et propose des réponses à chaque phrase. Touchez une réponse pour la dire avec la voix de papa. L'écoute reprend toute seule.</p>
+    <button class="main" id="mainBtn"><span class="dot" aria-hidden="true"></span><span id="mainLabel">Démarrer la conversation</span></button>
+    <div class="heard" id="heard" aria-live="polite"></div>
+    <div class="sugg" id="sugg"></div>
+    <div class="quick" id="quick"></div>
+    <div class="row"><button class="small" id="pauseBtn" hidden>Pause</button><button class="small" id="endBtn" hidden>Terminer</button></div>
+    <div class="thread" id="thread"></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  function $(s) { return document.querySelector(s); }
+  function h(tag, props) {
+    var e = document.createElement(tag); props = props || {};
+    Object.keys(props).forEach(function (k) { var v = props[k]; if (k === 'class') e.className = v; else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v); else if (v != null && v !== false) e.setAttribute(k, v); });
+    for (var i = 2; i < arguments.length; i++) { var c = arguments[i]; if (c == null) continue; (Array.isArray(c) ? c : [c]).forEach(function (x) { e.append(x instanceof Node ? x : document.createTextNode(x)); }); }
+    return e;
+  }
+  function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+  function cle(t) { return String(t).normalize('NFC').replace(/[‘’]/g, "'").replace(/ /g, ' ').split(/\s+/).filter(Boolean).join(' ').toLowerCase(); }
+  function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9' ]/g, ' '); }
+
+  /* ---------- données sur l'appareil (IndexedDB) ---------- */
+  function db() { return new Promise(function (res, rej) { var r = indexedDB.open('conversation-papa', 1); r.onupgradeneeded = function () { r.result.createObjectStore('kv'); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+  function put(k, v) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = function () { rej(t.error); }; }); }); }
+  function get(k) { return db().then(function (d) { return new Promise(function (res, rej) { var q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = function () { res(q.result); }; q.onerror = function () { rej(q.error); }; }); }); }
+
+  var QUICK = ['Oui.', 'Non.', 'Peut-être.', 'Je ne sais pas.', 'Merci.', 'Attends, je réfléchis.', 'Tu peux répéter ?', 'Ah ben oui !', 'Voilà, c\'est ça.'];
+  var data = { fiche: '', phrases: [], voix: {} }, urls = {};
+  function loadData() {
+    return get('data').then(function (d) {
+      if (!d) return;
+      data = d; urls = {};
+      Object.keys(d.voix || {}).forEach(function (k) { urls[k] = URL.createObjectURL(d.voix[k]); });
+      $('#packState').textContent = 'Installé : ' + Object.keys(urls).length + ' phrases avec sa voix, ' + (d.phrases || []).length + ' phrases connues' + (d.fiche ? ', fiche de papa' : '') + '.';
+    }).catch(function () {});
+  }
+  $('#packFile').addEventListener('change', function () {
+    var f = this.files && this.files[0], st = $('#packState'); if (!f) return;
+    if (!window.JSZip) { st.textContent = 'Impossible de lire le fichier (connexion ?).'; return; }
+    st.textContent = 'Lecture…';
+    JSZip.loadAsync(f).then(function (z) {
+      var m = z.file('conversation.json'); if (!m) throw new Error('fichier inattendu');
+      return m.async('string').then(function (txt) {
+        var man = JSON.parse(txt), out = { fiche: man.fiche || '', phrases: man.phrases || [], voix: {} };
+        return Promise.all((man.voix || []).map(function (e) {
+          var zf = z.file('voix/' + e.fichier); if (!zf) return null;
+          return zf.async('blob').then(function (b) { out.voix[cle(e.texte)] = new Blob([b], { type: 'audio/mpeg' }); });
+        })).then(function () { return put('data', out); });
+      });
+    }).then(loadData).catch(function (e) { st.textContent = 'Ce fichier ne convient pas : choisissez celui créé par l\'application Voix de Papa.'; });
+  });
+
+  /* ---------- clé Groq ---------- */
+  $('#key').value = ls('groq') || '';
+  $('#keySave').addEventListener('click', function () { var v = $('#key').value.trim(); ls('groq', v || null); $('#keyState').textContent = v ? 'Clé enregistrée sur cet appareil.' : 'Clé retirée.'; });
+  $('#keyTest').addEventListener('click', function () {
+    var st = $('#keyState'); st.textContent = 'Test en cours…';
+    ai('Bonjour, comment ça va ?').then(function (r) { st.textContent = r && r.length ? 'Ça marche : « ' + r[0] + ' »' : 'Pas de réponse.'; }).catch(function (e) { st.textContent = 'Échec : ' + (e && e.message || 'erreur'); });
+  });
+
+  /* ---------- réglages ---------- */
+  $('#setBtn').addEventListener('click', function () { var s = $('#setup'), open = s.hidden; s.hidden = !open; $('#conv').hidden = open; this.textContent = open ? 'Retour' : 'Réglages'; this.setAttribute('aria-expanded', String(open)); renderNew(); });
+
+  /* ---------- parole ---------- */
+  var synth = window.speechSynthesis || null, voices = [];
+  function loadVoices() {
+    if (!synth) return; voices = synth.getVoices().filter(function (v) { return /^fr/i.test(v.lang); });
+    var sel = $('#voiceSel'); sel.textContent = ''; voices.forEach(function (v) { sel.append(h('option', { value: v.name }, v.name)); });
+    if (ls('voix')) sel.value = ls('voix');
+  }
+  if (synth) { loadVoices(); synth.onvoiceschanged = loadVoices; }
+  $('#voiceSel').addEventListener('change', function () { ls('voix', this.value); });
+  var player = new Audio(); player.preload = 'auto';
+  function speak(text, done) {
+    var url = urls[cle(text)], fin = false;
+    function end() { if (!fin) { fin = true; done && done(); } }
+    $('#said').hidden = false; $('#said').textContent = text;
+    if (url) { player.onended = end; player.onerror = end; player.src = url; var p = player.play(); if (p && p.catch) p.catch(end); return; }
+    noteNew(text);
+    if (!synth) return end();
+    try {
+      synth.cancel(); var u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.rate = 0.95;
+      var v = voices.filter(function (x) { return x.name === ls('voix'); })[0] || voices[0]; if (v) u.voice = v;
+      u.onend = end; u.onerror = end; synth.speak(u);
+      setTimeout(end, 1500 + text.length * 120);
+    } catch (e) { end(); }
+  }
+  // Réponses dites avec la voix de l'appareil : à refaire avec sa voix
+  function newList() { try { return JSON.parse(ls('nouvelles') || '[]'); } catch (e) { return []; } }
+  function noteNew(t) { var l = newList(); if (l.map(cle).indexOf(cle(t)) < 0) { l.push(t); ls('nouvelles', JSON.stringify(l)); } }
+  function renderNew() { var l = newList(); $('#newState').textContent = l.length ? l.length + ' phrase(s) en attente : ' + l.slice(-5).join(' / ') : 'Aucune phrase en attente.'; }
+  $('#newShare').addEventListener('click', function () {
+    var l = newList(); if (!l.length) return;
+    var txt = 'Phrases à refaire avec la voix de papa :\n' + l.map(function (t) { return '- ' + t; }).join('\n');
+    if (navigator.share) navigator.share({ text: txt }).catch(function () {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { $('#newState').textContent = 'Copié : collez-le dans la conversation avec Claude.'; });
+  });
+  $('#newClear').addEventListener('click', function () { ls('nouvelles', null); renderNew(); });
+
+  /* ---------- réponses proposées ---------- */
+  var thread = [];
+  function library() { var seen = {}, out = []; (data.phrases || []).concat(QUICK).forEach(function (t) { var k = cle(t); if (!seen[k]) { seen[k] = 1; out.push(t); } }); return out; }
+  function hasVoice(t) { return !!urls[cle(t)]; }
+  function local(q) {
+    var qw = norm(q).split(/[\s']+/).filter(function (w) { return w.length > 3; }), out = [];
+    library().forEach(function (t) { var tw = norm(t).split(/[\s']+/); var s = qw.filter(function (w) { return tw.indexOf(w) >= 0; }).length; if (s) out.push({ t: t, s: s + (hasVoice(t) ? 0.5 : 0) }); });
+    out.sort(function (a, b) { return b.s - a.s; });
+    var r = out.slice(0, 4).map(function (x) { return x.t; });
+    if (/\?\s*$/.test(q)) r = r.concat(['Oui.', 'Non.', 'Je ne sais pas.']);
+    if (/\b(bonjour|salut|coucou|bonsoir)\b/.test(norm(q))) r.unshift('Bonjour ! Je suis content de te voir.');
+    if (/\b(ca va|comment (tu vas|vas tu|allez vous))\b/.test(norm(q))) r.unshift('Ça va, merci. Et toi ?');
+    return r.slice(0, 6);
+  }
+  function ai(heard) {
+    var key = ls('groq'); if (!key) return Promise.reject(new Error('pas de clé'));
+    var ctl = new AbortController(), to = setTimeout(function () { ctl.abort(); }, 9000);
+    var lib = library().slice(0, 300), hist = thread.slice(-10).map(function (m) { return (m.me ? 'Papa : ' : 'Interlocuteur : ') + m.t; }).join('\n');
+    var sys = 'Tu aides un homme atteint de la maladie de Charcot, qui ne peut plus parler, à répondre dans une conversation. Il touche une réponse et l\'appareil la dit avec sa voix. '
+      + 'Propose exactement 5 réponses possibles, variées (oui, non, nuancée, une question en retour, une touche d\'humour ou d\'émotion si ça s\'y prête), à la première personne, comme lui parlerait : français oral de l\'ouest de la France, phrases courtes (moins de 20 mots), avec parfois ses tournures (« Ah ben oui », « mais bon », « voilà », « quelque part », « c\'est ça »). '
+      + 'Quand une phrase de sa bibliothèque convient, reprends-la mot pour mot (elle sera dite avec sa vraie voix). N\'invente pas de faits précis absents de la fiche. Tutoie la famille. '
+      + 'Réponds uniquement en JSON : {"reponses": ["…", "…", "…", "…", "…"]}.';
+    var user = 'Fiche :\n' + (data.fiche || '(aucune)') + '\n\nBibliothèque :\n' + lib.map(function (t) { return '- ' + t; }).join('\n') + '\n\nConversation :\n' + (hist || '(début)') + '\n\nDernière phrase de l\'interlocuteur : ' + heard;
+    return fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST', signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', temperature: 0.7, max_tokens: 400, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: sys }, { role: 'user', content: user }] })
+    }).then(function (r) { clearTimeout(to); if (!r.ok) throw new Error(r.status === 401 ? 'clé refusée' : r.status === 429 ? 'trop de demandes, patientez' : 'erreur ' + r.status); return r.json(); })
+      .then(function (j) { var c = JSON.parse(j.choices[0].message.content); return (c.reponses || []).filter(function (x) { return typeof x === 'string' && x.trim(); }); });
+  }
+  var seq = 0;
+  function suggest(heard) {
+    var my = ++seq, base = local(heard);
+    render(base.map(function (t) { return { t: t, src: hasVoice(t) ? 'sa voix' : 'réponse toute prête' }; }), true);
+    ai(heard).then(function (arr) {
+      if (my !== seq) return;
+      var byKey = {}; library().forEach(function (t) { byKey[cle(t)] = t; });
+      var out = [], seen = {};
+      arr.concat(base).forEach(function (t) { t = byKey[cle(t)] || t.trim(); if (!seen[cle(t)] && out.length < 7) { seen[cle(t)] = 1; out.push({ t: t, src: hasVoice(t) ? 'sa voix' : 'voix de l\'appareil pour l\'instant' }); } });
+      render(out, false);
+    }).catch(function () { if (my === seq) render(base.map(function (t) { return { t: t, src: hasVoice(t) ? 'sa voix' : 'réponse toute prête' }; }), false); });
+  }
+  function render(list, waiting) {
+    var box = $('#sugg'); box.textContent = '';
+    list.forEach(function (x) { box.append(h('button', { onclick: function () { reply(x.t); } }, x.t, h('span', {}, x.src))); });
+    if (waiting && ls('groq')) box.append(h('p', { class: 'state' }, 'Recherche de réponses…'));
+  }
+  function renderThread() {
+    var box = $('#thread'); box.textContent = '';
+    thread.slice(-6).forEach(function (m) { box.append(h('div', { class: 'b ' + (m.me ? 'me' : 'them') }, m.t)); });
+  }
+  QUICK.forEach(function (t) { $('#quick').append(h('button', { onclick: function () { reply(t); } }, t)); });
+
+  /* ---------- écoute continue ---------- */
+  var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var st = { on: false, paused: false, speaking: false, buf: '', t: 0, wake: null }, rec = null, lastStart = 0, fails = 0;
+  function ui(msg, alert) {
+    var b = $('#mainBtn');
+    b.className = 'main' + (st.on && !st.paused && !alert ? ' on' : '') + (alert ? ' alert' : '');
+    $('#mainLabel').textContent = !st.on ? 'Démarrer la conversation' : alert ? 'Touchez pour reprendre l\'écoute' : st.paused ? 'Reprendre l\'écoute' : st.speaking ? 'Papa parle…' : 'J\'écoute…';
+    $('#pauseBtn').hidden = !st.on || st.paused; $('#endBtn').hidden = !st.on; $('#intro').hidden = st.on;
+    if (msg != null) $('#heard').textContent = msg;
+  }
+  function heardLine(t, partial) { var e = $('#heard'); e.textContent = ''; e.append(h('b', {}, 'On me dit : '), partial ? h('i', {}, t) : t); }
+  function flush() {
+    var v = st.buf.trim(); st.buf = ''; if (v.length < 2 || !st.on || st.paused || st.speaking) return;
+    thread.push({ t: v }); renderThread(); heardLine(v); suggest(v);
+  }
+  function makeRec() {
+    var r = new Rec(); r.lang = 'fr-FR'; r.continuous = true; r.interimResults = true;
+    r.onstart = function () { fails = 0; };
+    r.onresult = function (e) {
+      if (st.speaking || st.paused) return;
+      var tmp = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) st.buf = (st.buf + ' ' + e.results[i][0].transcript).trim(); else tmp += e.results[i][0].transcript; }
+      heardLine((st.buf + ' ' + tmp).trim(), true);
+      clearTimeout(st.t); st.t = setTimeout(flush, tmp ? 1800 : 1100);
+    };
+    r.onerror = function (e) {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { st.paused = true; ui('Le micro est refusé. Autorisez-le dans Réglages de l\'iPhone > Safari > Micro, puis touchez le bouton.', true); }
+    };
+    r.onend = function () { if (st.buf) flush(); if (st.on && !st.paused && !st.speaking) restart(); };
+    return r;
+  }
+  function begin() {
+    if (!Rec) { ui('Cet appareil ne sait pas écouter dans ce navigateur. Utilisez Safari (iPhone, iPad) ou Chrome.', true); return; }
+    try { if (!rec) rec = makeRec(); lastStart = Date.now(); rec.start(); ui(''); }
+    catch (e) { /* déjà démarrée */ }
+  }
+  // L'appareil coupe parfois l'écoute (silence, durée) : on la relance toute seule
+  function restart() {
+    if (Date.now() - lastStart < 1500) fails++; else fails = 0;
+    if (fails > 3) { ui(null, true); return; }
+    setTimeout(function () { if (st.on && !st.paused && !st.speaking) { try { rec.start(); lastStart = Date.now(); ui(); } catch (e) { rec = makeRec(); try { rec.start(); lastStart = Date.now(); ui(); } catch (x) { ui(null, true); } } } }, 250);
+  }
+  function halt() { clearTimeout(st.t); if (rec) { try { rec.abort(); } catch (e) {} } }
+  function wake(on) {
+    try {
+      if (on && navigator.wakeLock && !st.wake) navigator.wakeLock.request('screen').then(function (w) { st.wake = w; w.addEventListener('release', function () { st.wake = null; }); }).catch(function () {});
+      if (!on && st.wake) { st.wake.release(); st.wake = null; }
+    } catch (e) {}
+  }
+  // Pendant que papa parle, l'écoute est coupée (sinon l'appareil baisse le son et s'écoute lui-même), puis reprend
+  function reply(t) {
+    seq++; thread.push({ t: t, me: true }); renderThread(); $('#sugg').textContent = '';
+    st.speaking = true; st.buf = ''; halt(); ui();
+    speak(t, function () { st.speaking = false; if (st.on && !st.paused) { fails = 0; restart(); } else ui(); });
+  }
+  $('#mainBtn').addEventListener('click', function () {
+    if (st.on && !st.paused && !$('#mainBtn').classList.contains('alert')) return;
+    st.on = true; st.paused = false; fails = 0; wake(true); rec = null; begin();
+  });
+  $('#pauseBtn').addEventListener('click', function () { st.paused = true; halt(); ui('Écoute en pause.'); });
+  $('#endBtn').addEventListener('click', function () { st.on = false; st.paused = false; halt(); wake(false); ui(''); $('#sugg').textContent = ''; });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && st.on) { wake(true); if (!st.paused && !st.speaking) restart(); } });
+
+  ui(''); loadData();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script>
+</body>
+</html>

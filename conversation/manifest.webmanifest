@@ -1,0 +1,10 @@
+{
+  "name": "Conversation",
+  "short_name": "Conversation",
+  "lang": "fr",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#EDF2F3",
+  "theme_color": "#0B6B73",
+  "icons": [{ "src": "icone.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

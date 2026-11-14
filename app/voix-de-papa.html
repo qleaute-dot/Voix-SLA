@@ -263,6 +263,11 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       <div class="sugg" id="sugg"><div class="empty">Les réponses proposées apparaîtront ici.</div></div>
     </div>
     <div class="block">
+      <h2>Conversation mains libres sur iPhone ou iPad</h2>
+      <p class="note">Sur iPhone et iPad, Claude ne laisse pas cette page écouter en continu. La page « Conversation » à part le peut : préparez ici le fichier avec sa voix et sa fiche, puis ouvrez-le dans cette page (Réglages, étape 1).</p>
+      <div class="addrow" style="margin-top:0"><button class="small-btn primary" id="convPack">Préparer la conversation mains libres</button><span class="state" id="convPackState"></span></div>
+    </div>
+    <div class="block">
       <h2>Réponses rapides</h2>
       <div class="quick" id="quick"></div>
     </div>
@@ -1038,6 +1043,28 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   });
 
   function getDownloads() { try { return (window.claude && window.claude.use) ? window.claude.use('downloads') : Promise.resolve(null); } catch (e) { return Promise.resolve(null); } }
+  // Fichier pour la page « Conversation » autonome : sa voix, sa fiche et ses phrases, à garder sur l'appareil
+  $('#convPack').addEventListener('click', function () {
+    var st = $('#convPackState');
+    if (!window.JSZip) { st.textContent = 'La bibliothèque zip n\'a pas pu se charger. Rechargez la page.'; return; }
+    st.textContent = 'Préparation…';
+    var zip = new JSZip(), voix = [], keys = Object.keys(pack.urls), byKey = {};
+    library().forEach(function (t) { byKey[cle(t)] = t; }); (pack.textes || []).forEach(function (t) { byKey[cle(t)] = t; });
+    Promise.all(keys.map(function (k, i) {
+      return fetch(pack.urls[k]).then(function (r) { return r.blob(); }).then(function (b) {
+        var f = 'v' + i + '.mp3'; zip.file('voix/' + f, b); voix.push({ texte: byKey[k] || k, fichier: f });
+      }).catch(function () {});
+    })).then(loadFiche).then(function (f) {
+      zip.file('conversation.json', JSON.stringify({ format: 'voix-de-papa-conversation', version: 1, fiche: f || '', phrases: library(), voix: voix }));
+      return zip.generateAsync({ type: 'blob' });
+    }).then(function (blob) {
+      return getDownloads().then(function (dl) {
+        if (!dl) throw { code: 'unavailable' };
+        return dl.save({ filename: 'voix-de-papa-conversation.zip', data: blob });
+      });
+    }).then(function () { st.textContent = 'Fichier prêt : ' + voix.length + ' phrases avec sa voix.'; })
+      .catch(function (e) { st.textContent = e && e.code === 'declined' ? 'Enregistrement annulé.' : 'L\'enregistrement du fichier n\'est pas possible dans cette vue.'; });
+  });
   $('#exportBtn').addEventListener('click', function () {
     var st = $('#exportState');
     var data = JSON.stringify({ format: 'voix-de-papa-phrases', version: 1, textes: allTexts() }, null, 1);
