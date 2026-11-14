@@ -100,6 +100,18 @@ textarea.field { min-height: 92px; resize: vertical; }
 .mic svg { width: 34px; height: 34px; flex: none; }
 .live { min-height: 1.5em; margin: 12px 0 0; font-size: 1.15rem; color: var(--muted); font-style: italic; overflow-wrap: anywhere; }
 .state.wait::after { content: '…'; }
+/* Mode compact pendant la dictée du clavier (iPhone, iPad) : tout tient au-dessus du clavier */
+.kb { position: fixed; left: 0; right: 0; top: 0; z-index: 50; background: var(--bg, var(--surface-2)); display: flex; flex-direction: column; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px; box-sizing: border-box; }
+.kb[hidden] { display: none; }
+.kb-top { display: flex; gap: 8px; align-items: center; }
+.kb-top .field { flex: 1 1 auto; min-height: 44px; height: 44px; padding: 8px 12px; font-size: 16px; resize: none; }
+.kb-top .small-btn { min-height: 44px; padding: 6px 12px; flex: none; }
+.kb-heard { font-size: 1.05rem; color: var(--muted); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 1.3em; }
+.kb-heard b { color: var(--fg); }
+.kb .sugg { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; align-content: start; gap: 8px; }
+.kb .sugg button { min-height: 56px; padding: 10px 14px; font-size: 1.1rem; }
+.kb .sugg .empty { margin: 0; padding: 12px; }
+body.kbmode nav.tabs, body.kbmode .speechbar, body.kbmode main { visibility: hidden; }
 .sugg button span { display: block; font-size: 13px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 
 /* life story */
@@ -369,6 +381,11 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   </section>
 </main>
 
+<div class="kb" id="kbPanel" hidden>
+  <div class="kb-top"><div id="kbField" style="flex:1 1 auto;display:flex"></div><button class="small-btn" id="kbEnd">Terminer</button></div>
+  <div class="kb-heard" id="kbHeard">Touchez le micro du clavier : les réponses apparaîtront ici.</div>
+  <div id="kbSugg" style="display:flex;flex:1 1 auto;min-height:0"></div>
+</div>
 <input type="file" id="assocFile" aria-hidden="true" tabindex="-1" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
 <nav class="tabs" aria-label="Sections"><div class="wrap">
   <a href="#parler" data-tab="parler">Parler</a>
@@ -709,7 +726,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
         arr.forEach(function (t) {
           if (typeof t !== 'string' || !t.trim()) return; t = byKey[cle(t)] || t.trim();
           if (seen[cle(t)]) return; seen[cle(t)] = 1;
-          out.push({ text: t, src: hasVoice(t) ? 'sa voix' : 'voix de l\'iPad pour l\'instant' });
+          out.push({ text: t, src: hasVoice(t) ? 'sa voix' : 'voix de synthèse pour l\'instant' });
         });
         quick.forEach(function (q) { if (out.length < 7 && !seen[cle(q.text)]) { seen[cle(q.text)] = 1; out.push(q); } });
         if (out.length) renderSugg(out);
@@ -719,7 +736,10 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       st.className = 'state'; st.textContent = e && e.code === 'not_granted' ? '' : 'Réponses de secours (Claude indisponible)';
     });
   }
-  function heardText(v) { v = (v || '').trim(); if (!v) return; thread.push({ who: 'them', text: v }); renderThread(); aiSuggest(v); }
+  function heardText(v) {
+    v = (v || '').trim(); if (!v) return; thread.push({ who: 'them', text: v }); renderThread(); aiSuggest(v);
+    var k = $('#kbHeard'); k.textContent = ''; k.append(h('b', {}, 'On me dit : '), v);
+  }
 
   // Conversation permanente : dictée de Claude, sinon reconnaissance vocale du navigateur, sinon dictée du clavier
   var conv = { on: false, paused: false, mode: '', buf: '', t: 0, wake: null, kbLen: 0 };
@@ -759,8 +779,32 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     } catch (e) { rec = null; return false; }
   }
   // Dernier recours (iPad, iPhone) : la dictée du clavier ; les réponses arrivent dès que la personne s'arrête de parler
+  var kbHome = null;
+  function kbFit() {
+    var vv = window.visualViewport, p = $('#kbPanel');
+    if (!vv || p.hidden) return;
+    p.style.top = vv.offsetTop + 'px'; p.style.height = vv.height + 'px';
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', kbFit); visualViewport.addEventListener('scroll', kbFit); }
+  function kbOn() {
+    var f = $('#heard'), sg = $('#sugg'), p = $('#kbPanel');
+    if (!kbHome) kbHome = { f: f.parentNode, fn: f.nextSibling, s: sg.parentNode, sn: sg.nextSibling };
+    $('#kbField').append(f); $('#kbSugg').append(sg);
+    f.classList.add('kb-in'); f.setAttribute('rows', '1'); f.placeholder = 'Dictée…';
+    p.hidden = false; document.body.classList.add('kbmode'); p.style.height = window.innerHeight + 'px'; kbFit();
+  }
+  function kbOff() {
+    var f = $('#heard'), sg = $('#sugg'), p = $('#kbPanel');
+    if (p.hidden) return;
+    if (kbHome) { kbHome.f.insertBefore(f, kbHome.fn); kbHome.s.insertBefore(sg, kbHome.sn); }
+    f.classList.remove('kb-in'); f.removeAttribute('rows'); f.placeholder = 'Ou écrivez ici ce que dit la personne';
+    p.hidden = true; document.body.classList.remove('kbmode'); try { f.blur(); } catch (e) {}
+  }
+  // Toucher une réponse ou un bouton du panneau ne doit pas fermer le clavier (sinon la dictée s'arrête)
+  $('#kbPanel').addEventListener('mousedown', function (e) { if (e.target.closest('button')) e.preventDefault(); });
+  $('#kbEnd').addEventListener('click', function () { $('#convEnd').click(); });
   function startClavier(why) {
-    conv.mode = 'clavier'; var f = $('#heard'); conv.kbLen = f.value.length;
+    conv.mode = 'clavier'; var f = $('#heard'); conv.kbLen = f.value.length; kbOn();
     convUi((why || '') + 'Touchez le micro du clavier, à côté de la barre d\'espace : les réponses apparaîtront dès que la personne fera une pause.');
     try { f.focus(); } catch (e) {}
   }
@@ -793,8 +837,8 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     if (conv.on && !conv.paused) { if (conv.mode === 'clavier') { try { $('#heard').focus(); } catch (e) {} } return; }
     conv.on = true; wake(true); listen();
   });
-  $('#convPause').addEventListener('click', function () { stopListen(); conv.paused = true; convUi('Écoute en pause.'); });
-  $('#convEnd').addEventListener('click', function () { stopListen(); conv.on = false; conv.paused = false; conv.mode = ''; wake(false); convUi(''); });
+  $('#convPause').addEventListener('click', function () { stopListen(); kbOff(); conv.paused = true; convUi('Écoute en pause.'); });
+  $('#convEnd').addEventListener('click', function () { stopListen(); kbOff(); conv.on = false; conv.paused = false; conv.mode = ''; wake(false); convUi(''); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && conv.on) { conv.wake = null; wake(true); } });
   function renderSugg(list) {
     var box = $('#sugg'); box.textContent = '';
