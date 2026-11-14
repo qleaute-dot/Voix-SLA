@@ -384,6 +384,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 <div class="kb" id="kbPanel" hidden>
   <div class="kb-top"><div id="kbField" style="flex:1 1 auto;display:flex"></div><button class="small-btn" id="kbEnd">Terminer</button></div>
   <div class="kb-heard" id="kbHeard">Touchez le micro du clavier : les réponses apparaîtront ici.</div>
+  <button class="mic" id="kbResume" style="min-height:64px" hidden><span>Reprendre l'écoute : touchez ici, puis le micro du clavier</span></button>
   <div id="kbSugg" style="display:flex;flex:1 1 auto;min-height:0"></div>
 </div>
 <input type="file" id="assocFile" aria-hidden="true" tabindex="-1" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
@@ -694,7 +695,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     var k = cle(t); if (hasVoice(t) || asked[k]) return; asked[k] = 1;
     cap('db').then(function (db) { if (db) return db.collection('demandes').doc('c' + Date.now()).set({ date: new Date().toISOString(), textes: [t], source: 'conversation' }); }).catch(function () {});
   }
-  function reply(text) { speak(text); askVoice(text); thread.push({ who: 'me', text: text }); renderThread(); renderSugg([]); }
+  function reply(text) { if (typeof kbBeforeSpeak === 'function') kbBeforeSpeak(); speak(text); askVoice(text); thread.push({ who: 'me', text: text }); renderThread(); renderSugg([]); }
   // Fiche « qui est papa », gardée dans l'espace privé de l'application (jamais dans le code)
   var fiche = null;
   function loadFiche() {
@@ -742,7 +743,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   }
 
   // Conversation permanente : dictée de Claude, sinon reconnaissance vocale du navigateur, sinon dictée du clavier
-  var conv = { on: false, paused: false, mode: '', buf: '', t: 0, wake: null, kbLen: 0 };
+  var conv = { on: false, paused: false, mode: '', buf: '', t: 0, wake: null, kbDone: [] };
   var rec = null, dict = null, dictReady = false;
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   // Pendant que papa parle, ce que le micro entend est ignoré (c'est sa propre voix)
@@ -803,16 +804,41 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   // Toucher une réponse ou un bouton du panneau ne doit pas fermer le clavier (sinon la dictée s'arrête)
   $('#kbPanel').addEventListener('mousedown', function (e) { if (e.target.closest('button')) e.preventDefault(); });
   $('#kbEnd').addEventListener('click', function () { $('#convEnd').click(); });
+  // L'iPhone réécrit tout le texte dicté depuis le début : on repère où s'arrêtent les mots déjà traités
+  function kbTok(t) { var out = []; t.split(/\s+/).filter(Boolean).forEach(function (w) { if (out.length && !kbNorm(w)) out[out.length - 1] += ' ' + w; else out.push(w); }); return out; }
+  function kbNorm(w) { return w.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9']/g, ''); }
+  function kbNew(cur) {
+    var toks = kbTok(cur), n = toks.map(kbNorm), done = conv.kbDone || [];
+    conv.kbDone = n;
+    if (!done.length) return toks.join(' ');
+    for (var a = Math.min(3, done.length); a >= 1; a--) {
+      var anc = done.slice(-a);
+      for (var i = n.length - a; i >= 0; i--) {
+        var ok = true; for (var j = 0; j < a; j++) if (n[i + j] !== anc[j]) { ok = false; break; }
+        if (ok) return toks.slice(i + a).join(' ');
+      }
+    }
+    return n.length > done.length ? toks.slice(done.length).join(' ') : '';
+  }
+  function kbReset() { var f = $('#heard'); f.value = ''; conv.kbDone = []; clearTimeout(conv.t); }
+  // Sur iPhone, le son est coupé tant que le micro du clavier enregistre : on arrête la dictée avant de parler
+  function kbBeforeSpeak() {
+    if (!conv.on || conv.mode !== 'clavier') return;
+    kbReset(); try { $('#heard').blur(); } catch (e) {}
+    $('#kbResume').hidden = false;
+  }
+  $('#kbResume').addEventListener('click', function () { $('#kbResume').hidden = true; kbReset(); try { $('#heard').focus(); } catch (e) {} });
+  $('#heard').addEventListener('focus', function () { $('#kbResume').hidden = true; });
   function startClavier(why) {
-    conv.mode = 'clavier'; var f = $('#heard'); conv.kbLen = f.value.length; kbOn();
+    conv.mode = 'clavier'; var f = $('#heard'); kbReset(); kbOn();
     convUi((why || '') + 'Touchez le micro du clavier, à côté de la barre d\'espace : les réponses apparaîtront dès que la personne fera une pause.');
     try { f.focus(); } catch (e) {}
   }
   $('#heard').addEventListener('input', function () {
     if (!conv.on || conv.mode !== 'clavier' || conv.paused) return;
-    var f = $('#heard'); if (f.value.length < conv.kbLen) conv.kbLen = f.value.length;
+    var f = $('#heard');
     clearTimeout(conv.t); conv.t = setTimeout(function () {
-      var v = f.value.slice(conv.kbLen).trim(); conv.kbLen = f.value.length;
+      var v = kbNew(f.value).trim();
       if (v.length > 1 && !speaking) heardText(v);
     }, 2000);
   });
