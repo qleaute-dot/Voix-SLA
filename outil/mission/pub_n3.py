@@ -1,7 +1,7 @@
 # Panel n3 (20 phrases neuves) : versions à l'aveugle, ordre mélangé ; ajoute les versions disponibles
 import json, os, subprocess, random, sys
 V="/root/voix"; B=f"{V}/n3"; P="/tmp/claude-0/-home-user-Voix-SLA/1c69338f-3c8e-524c-9834-35b5bd9a198c/scratchpad/publi/comparer"
-VERS=[("n3a","out_ft3","Version 1"),("n3b","out_ft2","Version 2"),("n3c","out_ft3b","Version 3"),("n3d","out_f5","Version 4")]
+VERS=[("n3a","out_ft3","Version 1"),("n3b","out_ft2","Version 2"),("n3c","out_ft3b","Version 3"),("n3d","out_f5","Version 4"),("n3e","out_f5b","Version 5")]
 VERS=[v for v in VERS if os.path.isdir(f"{B}/{v[1]}") and len(os.listdir(f"{B}/{v[1]}"))>=20]
 items=json.load(open(f"{V}/pipe/n3_items.json")); man=json.load(open(f"{P}/manifest.json"))
 old=[p for p in man["paires"] if not p["version"].startswith("n3")]

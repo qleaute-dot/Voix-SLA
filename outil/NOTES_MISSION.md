@@ -194,3 +194,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 22:40 UTC : Applio papa2 (papa.wav + 44 extraits vidéo, 20 époques) fini, index régénéré.
   Timbre mesuré sur n3 : ft2+papa 0.649, ft3+papa 0.656, ft3+papa2 0.607 (en baisse ; à confirmer à l'oreille).
   F5 : dataset 0.15 h, fine-tune lancé.
+- 01:07 UTC « Go » Version 5 : pipe/nuit3.sh (après NUIT2FINI) post-traite F5 → n3/out_f5 (V4PRET),
+  copie fp16 du modèle V4 dans f5snap/, reprise F5 (poids seuls) jusqu'à 06:30 UTC, génération
+  n3/raw_f5b → out_f5b (V5PRET). pub_n3.py : n3e = Version 5. Réveils 05:50 et 07:30 UTC.
