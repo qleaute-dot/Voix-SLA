@@ -197,3 +197,6 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 01:07 UTC « Go » Version 5 : pipe/nuit3.sh (après NUIT2FINI) post-traite F5 → n3/out_f5 (V4PRET),
   copie fp16 du modèle V4 dans f5snap/, reprise F5 (poids seuls) jusqu'à 06:30 UTC, génération
   n3/raw_f5b → out_f5b (V5PRET). pub_n3.py : n3e = Version 5. Réveils 05:50 et 07:30 UTC.
+- 01:12 UTC Redémarrage du conteneur : tout arrêté (F5 à l'étape ~1440, sauvegarde à 1380).
+  Swap réactivé (swapon /root/swapfile). Reprise F5 depuis 1380 (poids seuls + clés EMA initted/step
+  requises par load_checkpoint) → f5t/ft4.log ; pipe/nuit5.sh arrête à 04:30 et génère V4 ; nuit3.sh enchaîne.

@@ -30,7 +30,7 @@ c = torch.load("$C/model_last.pt", map_location="cpu", weights_only=True)
 print("modele V4 a l'etape", c.get("update"))
 torch.save({"ema_model_state_dict": {k: (v.half() if v.is_floating_point() else v) for k, v in c["ema_model_state_dict"].items()}, "update": c.get("update")}, "/root/voix/f5snap/f5_v4_half.pt")
 os.remove("$C/model_last.pt")
-torch.save({"ema_model_state_dict": c["ema_model_state_dict"]}, "$C/model_last.pt")
+sd = {k: v for k, v in c["ema_model_state_dict"].items()}; sd.setdefault("initted", torch.tensor(True)); sd.setdefault("step", torch.tensor(0)); torch.save({"ema_model_state_dict": sd}, "$C/model_last.pt")
 PY
 bash pipe/ft_f5.sh > f5t/ft3.log 2>&1 &
 while [ $(date -u +%H%M) -lt 0630 ] || [ $(date -u +%H) -ge 12 ]; do sleep 60; pgrep -f f5-tts_finetune >/dev/null || break; done
