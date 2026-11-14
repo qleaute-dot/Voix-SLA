@@ -204,3 +204,5 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   Mesures n3 : timbre 0.588 (ft3 0.656, ft2 0.649, ft3+papa2 0.607) ; mots faux >15 % : 7/20 (ft3 4, ft2 2).
   Publié (artefact v32) : n3c = Version 3, n3d = Version 4 ; retirés f5a f5b v_lent v_long (déjà notés) → 466 fichiers.
   F5 reprend jusqu'à 06:30 UTC pour la Version 5.
+
+- 07:35 UTC — Version 5 (F5 repris depuis V4, +694 étapes ≈ 3900 au total, puis Applio + débruitage) publiée (artefact v33, dossier n3e). Mesures : timbre 0.555, 2/20 phrases avec mots faux >15 %. Comparatif timbre : ft3 0.656, ft2 0.649, ft3+papa2 0.607, F5 V4 0.588, F5 V5 0.555. Prochaine étape : notes à l'aveugle n3c/n3d/n3e, puis point stratégie (VoxCPM2 si pas prometteur, sur Go).
