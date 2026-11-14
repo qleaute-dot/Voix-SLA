@@ -18,7 +18,7 @@ for it in items:
     for k in range(n):
         f = f"{out}/{it['id']}_{k}.wav"
         if os.path.exists(f): continue
-        torch.manual_seed(1000 * k + 7); t = time.time()
+        torch.manual_seed(1000 * k + 7 + int(os.environ.get("SEEDOFF", "0"))); t = time.time()
         o = m.inference(it["texte"], "fr", gpt, spk, temperature=temp, repetition_penalty=5.0, top_p=0.85, speed=SPEED, enable_text_splitting=False)
         w = np.asarray(o["wav"], dtype="float32"); w = w / (np.abs(w).max() or 1) * 0.89
         sf.write(f, w, 24000); print("gen", it["id"], k, round(time.time() - t, 1), flush=True)

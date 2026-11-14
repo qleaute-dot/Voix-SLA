@@ -206,3 +206,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
   F5 reprend jusqu'à 06:30 UTC pour la Version 5.
 
 - 07:35 UTC — Version 5 (F5 repris depuis V4, +694 étapes ≈ 3900 au total, puis Applio + débruitage) publiée (artefact v33, dossier n3e). Mesures : timbre 0.555, 2/20 phrases avec mots faux >15 %. Comparatif timbre : ft3 0.656, ft2 0.649, ft3+papa2 0.607, F5 V4 0.588, F5 V5 0.555. Prochaine étape : notes à l'aveugle n3c/n3d/n3e, puis point stratégie (VoxCPM2 si pas prometteur, sur Go).
+
+- Notes à l'aveugle n3 (20 phrases) : V3 = ft3 + Applio papa2 12/20 bon ; V1 ft3 8 ; V2 ft2 8 ; V4 F5 5 ; V5 F5 prolongé 3. F5 abandonné (accent). 16/20 couvertes en combinant ; ratées partout : q03, q04, q13, q19 (questions).
+- 08:45 UTC — Panel n4 (8 phrases difficiles) publié (artefact v34–35) : n4x = 3 meilleures de 5 nouvelles prises V3 (dont prises avec extraits-questions c039/w000 comme modèle), n4v = VoxCPM2 sans entraînement brut (2 meilleures de 3 : continuation c064 ou c035 + référence c058, ou référence seule ; la continuation avec c039 coupe la phrase), n4va = n4v + Applio papa2 + débruitage. F5 (n3d/n3e) retiré du panneau.
+- Disque : retirer nvidia/triton casse torch (libcublas). Les bibliothèques nvidia sont partagées entre rvc et xtts (liens durs) ; seul triton peut être retiré. Les intermédiaires Applio et les époques inutiles ont été supprimés.
