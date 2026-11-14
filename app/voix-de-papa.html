@@ -95,6 +95,11 @@ textarea.field { min-height: 92px; resize: vertical; }
 .sugg { display: grid; gap: 12px; }
 .sugg button { text-align: left; min-height: 88px; padding: 14px 18px; border-radius: 18px; border: 2px solid var(--accent); background: var(--surface); font-size: clamp(1.15rem, 2.2vw, 1.45rem); font-weight: 700; line-height: 1.3; }
 .sugg button:hover { background: var(--accent-soft); }
+.mic { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 96px; border-radius: 22px; border: 3px solid var(--accent); background: var(--accent); color: var(--accent-fg); font-size: clamp(1.25rem, 2.6vw, 1.6rem); font-weight: 800; }
+.mic[aria-pressed="true"] { background: var(--alert); border-color: var(--alert); color: var(--surface); }
+.mic svg { width: 34px; height: 34px; flex: none; }
+.live { min-height: 1.5em; margin: 12px 0 0; font-size: 1.15rem; color: var(--muted); font-style: italic; overflow-wrap: anywhere; }
+.state.wait::after { content: '…'; }
 .sugg button span { display: block; font-size: 13px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 
 /* life story */
@@ -225,18 +230,20 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 
   <section class="view" id="v-conversation" hidden>
     <h1>Conversation</h1>
-    <p class="note">Prototype : on écrit ici ce que dit l'interlocuteur. Dans l'application finale, l'iPad l'écoute et le transcrit tout seul. Les propositions sont tirées de « Ma vie », choisies par mots-clés. Dans l'application finale, l'IA les rédigera à partir de ces mêmes dossiers.</p>
+    <p class="note">Touchez « Écouter » : l'iPad écoute la personne qui vous parle, puis propose des réponses écrites comme papa les dirait. Touchez une réponse pour la dire. Les réponses que sa voix ne connaît pas encore sont dites avec la voix de l'iPad, puis envoyées à Claude pour être refaites avec sa voix.</p>
     <div class="thread" id="thread"></div>
     <div class="block">
       <h2>Ce que dit mon interlocuteur</h2>
-      <textarea class="field" id="heard" style="width:100%" placeholder="Par exemple : Alors Papa, raconte-moi ton plus beau voyage ?" aria-label="Ce que dit l'interlocuteur"></textarea>
+      <button class="mic" id="micBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg><span id="micLabel">Écouter</span></button>
+      <p class="live" id="live" aria-live="polite"></p>
+      <textarea class="field" id="heard" style="width:100%;margin-top:10px" placeholder="Ou écrivez ici ce que dit la personne" aria-label="Ce que dit l'interlocuteur"></textarea>
       <div class="addrow" style="margin-top:10px">
         <button class="small-btn primary" id="suggest">Proposer des réponses</button>
         <button class="small-btn" id="clearThread">Effacer la conversation</button>
       </div>
     </div>
     <div class="block">
-      <h2>Mes réponses possibles</h2>
+      <h2>Mes réponses possibles <span class="state" id="suggState" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
       <div class="sugg" id="sugg"><div class="empty">Les réponses proposées apparaîtront ici.</div></div>
     </div>
     <div class="block">
@@ -371,7 +378,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 (function () {
   var KEY = 'voix-de-papa-v1';
   var CATS = [
-    { id: 'courant', label: 'Courant' }, { id: 'besoins', label: 'Besoins' }, { id: 'manger', label: 'Manger et boire' },
+    { id: 'courant', label: 'Courant' }, { id: 'besoins', label: 'Besoins' }, { id: 'position', label: 'Position et gêne' }, { id: 'manger', label: 'Manger et boire' },
     { id: 'douleur', label: 'Douleur' }, { id: 'confort', label: 'Confort' }, { id: 'loisirs', label: 'Loisirs' },
     { id: 'famille', label: 'Famille' }, { id: 'urgence', label: 'Urgence', alert: true }
   ];
@@ -384,9 +391,13 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     { id: 'dates', label: 'Les dates importantes', kw: ['quand', 'date', 'annee', 'ne', 'naissance', 'anniversaire', 'marie', 'mariage', 'souvenir'] },
     { id: 'gouts', label: 'Ce que j\'aime', kw: ['aimez', 'aime', 'musique', 'plat', 'cuisine', 'loisir', 'loisirs', 'passion', 'hobby', 'manger', 'favori', 'prefere', 'humour'] }
   ];
+  var POSITION = ['Remonte-moi un peu, s\'il te plaît.', 'Tourne-moi sur le côté.', 'Tourne-moi sur l\'autre côté.', 'Je voudrais m\'asseoir.', 'Je voudrais m\'allonger.', 'Redresse un peu le dossier.', 'Baisse un peu le dossier.', 'Ma tête est mal calée.', 'Remets-moi l\'oreiller.', 'Cale-moi mieux le dos.', 'Mes jambes sont mal placées.', 'Bouge-moi un peu le bras.', 'Je glisse, remonte-moi.', 'Ça fait trop longtemps que je suis dans la même position.',
+    'Ça me gêne, là.', 'Ça me serre trop.', 'Ça me gratte.', 'J\'ai une crampe.', 'J\'ai des fourmis dans les jambes.', 'J\'ai mal aux fesses à force d\'être assis.', 'Mon bras me fait mal.', 'J\'ai mal à la nuque.', 'J\'ai les pieds froids.', 'J\'ai trop chaud, enlève-moi une couverture.', 'J\'ai froid, rajoute-moi une couverture.', 'Il y a un pli sous moi, ça me fait mal.', 'Mes lunettes me gênent.', 'Essuie-moi la bouche, s\'il te plaît.', 'J\'ai besoin de tousser, aide-moi.', 'J\'ai du mal à avaler.', 'Je suis gêné pour respirer.', 'Ce n\'est pas urgent, mais ça me gêne.',
+    'Un peu plus.', 'Stop, c\'est bien là.', 'Non, pas comme ça.', 'C\'est mieux comme ça, merci.'];
   var DEFAULT_PHRASES = {
     courant: ['Bonjour !', 'Merci beaucoup.', 'Oui.', 'Non.', 'Un instant, s\'il vous plaît.', 'Pouvez-vous répéter ?', 'Je ne suis pas d\'accord.', 'Au revoir, à bientôt.'],
     besoins: ['J\'ai besoin d\'aide, s\'il vous plaît.', 'Je voudrais aller aux toilettes.', 'J\'ai besoin de me reposer.', 'Je suis fatigué.', 'Je voudrais me laver.', 'Pouvez-vous m\'aider à m\'asseoir ?'],
+    position: POSITION,
     manger: ['J\'ai faim.', 'J\'ai soif.', 'Un verre d\'eau, s\'il vous plaît.', 'Je voudrais un café.', 'C\'est délicieux, merci.', 'Je n\'ai plus faim.'],
     douleur: ['J\'ai mal.', 'J\'ai mal à la tête.', 'J\'ai mal au dos.', 'Ça fait mal ici.', 'La douleur est forte.', 'Ça va un peu mieux.'],
     confort: ['J\'ai froid.', 'J\'ai chaud.', 'Pouvez-vous changer ma position ?', 'Allumez la lumière, s\'il vous plaît.', 'Éteignez la lumière, s\'il vous plaît.', 'Ouvrez la fenêtre, s\'il vous plaît.'],
@@ -404,7 +415,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     dates: [EX('Je me suis marié en juin 1982.'), EX('Mon premier petit-enfant est né en 2012.')],
     gouts: [EX('J\'aime la chanson française et le café noir bien serré.'), EX('J\'adore plaisanter, il faut garder le sourire.'), EX('Mon plat préféré, c\'est le poisson grillé.')]
   };
-  var QUICK = ['Oui.', 'Non.', 'Peut-être.', 'Merci.', 'Pouvez-vous répéter, s\'il vous plaît ?', 'Un instant, je réfléchis.', 'Je suis content de vous voir.'];
+  var QUICK = ['Oui.', 'Non.', 'Peut-être.', 'Je ne sais pas.', 'Merci.', 'Attends, je réfléchis.', 'Tu peux répéter ?', 'Ah ben oui !', 'Voilà, c\'est ça.', 'Je suis content de te voir.'];
   var INTENTS = [
     { re: /\b(bonjour|salut|coucou|bonsoir)\b/, out: ['Bonjour ! Je suis content de vous voir.', 'Bonjour, comment allez-vous ?'] },
     { re: /\b(comment (allez|vas|te sens|vous sentez)|ca va|la forme)\b/, out: ['Ça va, merci. Et vous ?', 'Je suis fatigué aujourd\'hui, mais content que vous soyez là.', 'J\'ai un peu mal aujourd\'hui.'] },
@@ -434,6 +445,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   var S = null;
   try { S = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { S = null; }
   if (!S || !S.phrases || !S.life) S = { phrases: clone(DEFAULT_PHRASES), life: clone(DEFAULT_LIFE), rate: 0.95, voice: '' };
+  if (!S.phrases.position) S.phrases.position = POSITION.slice();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} if (typeof renderPack === 'function') try { renderPack(); } catch (e) {} }
 
   /* ---------- voix de papa : pack audio généré par le carnet Colab ---------- */
@@ -642,17 +654,110 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     if (!thread.length) { box.append(h('div', { class: 'empty' }, 'La conversation apparaîtra ici.')); return; }
     thread.forEach(function (m) { box.append(h('div', { class: 'bubble ' + m.who }, h('small', {}, m.who === 'me' ? 'Papa' : 'Interlocuteur'), m.text)); });
   }
-  function reply(text) { speak(text); thread.push({ who: 'me', text: text }); renderThread(); renderSugg([]); }
+  // Bibliothèque : toutes les phrases que l'application connaît (tuiles, Ma vie, réponses rapides, voix de papa)
+  function library() {
+    var seen = {}, out = [];
+    function add(t) { var k = cle(t); if (t && !seen[k]) { seen[k] = 1; out.push(t); } }
+    Object.keys(S.phrases).forEach(function (c) { (S.phrases[c] || []).forEach(add); });
+    SECTIONS.forEach(function (sec) { (S.life[sec.id] || []).forEach(function (e) { if (!e.ex) add(e.t); }); });
+    QUICK.forEach(add); (pack.textes || []).forEach(add);
+    return out;
+  }
+  function hasVoice(t) { return !!(pack.urls[cle(t)] || realUrls[cle(t)]); }
+  // Réponse que sa voix ne connaît pas encore : notée pour être refaite avec sa voix
+  var asked = {};
+  function askVoice(t) {
+    var k = cle(t); if (hasVoice(t) || asked[k]) return; asked[k] = 1;
+    cap('db').then(function (db) { if (db) return db.collection('demandes').doc('c' + Date.now()).set({ date: new Date().toISOString(), textes: [t], source: 'conversation' }); }).catch(function () {});
+  }
+  function reply(text) { speak(text); askVoice(text); thread.push({ who: 'me', text: text }); renderThread(); renderSugg([]); }
+  // Fiche « qui est papa », gardée dans l'espace privé de l'application (jamais dans le code)
+  var fiche = null;
+  function loadFiche() {
+    return fiche !== null ? Promise.resolve(fiche) : cap('db').then(function (db) { return db ? db.collection('fiche').doc('papa').get() : null; })
+      .then(function (snap) { var d = snap && (snap.data ? snap.data() : snap); fiche = (d && d.texte) || ''; return fiche; }).catch(function () { fiche = ''; return ''; });
+  }
+  var suggSeq = 0;
+  function aiSuggest(heard) {
+    var seq = ++suggSeq, st = $('#suggState');
+    var quick = suggestFor(heard); renderSugg(quick);
+    cap('sample').then(function (sample) {
+      if (!sample || seq !== suggSeq) return;
+      st.textContent = 'Claude cherche des réponses'; st.className = 'state wait';
+      return loadFiche().then(function (f) {
+        var lib = library(), hist = thread.slice(-10).map(function (m) { return (m.who === 'me' ? 'Papa : ' : 'Interlocuteur : ') + m.text; }).join('\n');
+        var prompt = 'Tu aides un homme atteint de la maladie de Charcot, qui ne peut plus parler, à répondre dans une conversation. Il touche une réponse et l\'application la dit avec sa voix.\n\n'
+          + 'Ce que l\'on sait de lui :\n' + (f || '(pas encore de fiche)') + '\n\n'
+          + 'Phrases que sa voix sait déjà dire (reprends-en une mot pour mot quand elle convient, c\'est préférable) :\n' + lib.map(function (t) { return '- ' + t; }).join('\n') + '\n\n'
+          + 'Conversation jusqu\'ici :\n' + (hist || '(début)') + '\n\n'
+          + 'Propose exactement 5 réponses possibles, variées (oui, non, nuancée, une question en retour, une touche d\'humour ou d\'émotion si ça s\'y prête). Règles : à la première personne, comme lui parlerait, en français oral de l\'ouest de la France, avec ses tournures (« Ah ben oui », « mais bon », « voilà », « quelque part », « c\'est ça ») sans en abuser ; phrases courtes (moins de 20 mots) ; n\'invente pas de faits précis absents de la fiche (dates, noms, lieux) ; tutoie la famille, vouvoie les soignants et les inconnus si on le devine. '
+          + 'Réponds uniquement avec un tableau JSON de 5 chaînes.';
+        return sample.json(prompt, { modelTier: 'quick', cache: false });
+      }).then(function (arr) {
+        if (seq !== suggSeq) return;
+        st.textContent = ''; st.className = 'state';
+        if (!Array.isArray(arr)) return;
+        var lib = library(), byKey = {}; lib.forEach(function (t) { byKey[cle(t)] = t; });
+        var out = [], seen = {};
+        arr.forEach(function (t) {
+          if (typeof t !== 'string' || !t.trim()) return; t = byKey[cle(t)] || t.trim();
+          if (seen[cle(t)]) return; seen[cle(t)] = 1;
+          out.push({ text: t, src: hasVoice(t) ? 'sa voix' : 'voix de l\'iPad pour l\'instant' });
+        });
+        quick.forEach(function (q) { if (out.length < 7 && !seen[cle(q.text)]) { seen[cle(q.text)] = 1; out.push(q); } });
+        if (out.length) renderSugg(out);
+      });
+    }).catch(function (e) {
+      if (seq !== suggSeq) return;
+      st.className = 'state'; st.textContent = e && e.code === 'not_granted' ? '' : 'Réponses de secours (Claude indisponible)';
+    });
+  }
+  function heardText(v) { v = (v || '').trim(); if (!v) return; thread.push({ who: 'them', text: v }); renderThread(); aiSuggest(v); }
+
+  // Écoute : dictée de Claude si disponible, sinon reconnaissance vocale de Safari ou Chrome
+  var listening = false, rec = null, dict = null, buf = '';
+  var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function micUi(on, msg) {
+    listening = on; var b = $('#micBtn'); b.setAttribute('aria-pressed', String(on));
+    $('#micLabel').textContent = on ? 'J\'écoute… toucher pour terminer' : 'Écouter';
+    if (msg != null) $('#live').textContent = msg;
+  }
+  function finish() { var v = buf.trim(); buf = ''; micUi(false, ''); if (v) heardText(v); }
+  cap('dictation').then(function (d) {
+    if (!d) return; dict = d;
+    d.onPartial(function (e) { $('#live').textContent = (buf + ' ' + e.text).trim(); });
+    d.onFinal(function (e) { buf = (buf + ' ' + e.text).trim(); $('#live').textContent = buf; });
+    d.onState(function (e) { if (e.state === 'idle' && listening) finish(); });
+  });
+  function startRec() {
+    if (!Rec) { micUi(false, 'Cet appareil ne sait pas écouter ici : écrivez ce que dit la personne.'); return; }
+    try {
+      rec = new Rec(); rec.lang = 'fr-FR'; rec.interimResults = true; rec.continuous = true;
+      rec.onresult = function (e) {
+        var fin = '', tmp = '';
+        for (var i = 0; i < e.results.length; i++) { if (e.results[i].isFinal) fin += e.results[i][0].transcript + ' '; else tmp += e.results[i][0].transcript; }
+        buf = fin.trim(); $('#live').textContent = (fin + tmp).trim();
+        clearTimeout(rec._t); rec._t = setTimeout(function () { try { rec.stop(); } catch (x) {} }, 2200);
+      };
+      rec.onerror = function (e) { var m = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Micro refusé : autorisez le micro, ou écrivez ce que dit la personne.' : e.error === 'no-speech' ? 'Je n\'ai rien entendu.' : ''; if (m) { buf = ''; micUi(false, m); } };
+      rec.onend = function () { if (listening) { var live = $('#live').textContent; if (!buf && live) buf = live; finish(); } };
+      micUi(true, ''); rec.start();
+    } catch (e) { micUi(false, 'Écoute impossible ici : écrivez ce que dit la personne.'); }
+  }
+  $('#micBtn').addEventListener('click', function () {
+    stopAll();
+    if (listening) { if (dict) dict.stop().catch(function () {}); if (rec) try { rec.stop(); } catch (e) {} return; }
+    buf = '';
+    if (dict) { micUi(true, ''); dict.start().catch(function () { dict = null; startRec(); }); return; }
+    startRec();
+  });
   function renderSugg(list) {
     var box = $('#sugg'); box.textContent = '';
     if (!list.length) { box.append(h('div', { class: 'empty' }, 'Les réponses proposées apparaîtront ici.')); return; }
     list.forEach(function (s) { box.append(h('button', { onclick: function () { reply(s.text); } }, s.text, h('span', {}, s.src))); });
   }
-  $('#suggest').addEventListener('click', function () {
-    var i = $('#heard'), v = i.value.trim(); if (!v) return;
-    thread.push({ who: 'them', text: v }); i.value = ''; renderThread(); renderSugg(suggestFor(v));
-  });
-  $('#clearThread').addEventListener('click', function () { thread = []; renderThread(); renderSugg([]); });
+  $('#suggest').addEventListener('click', function () { var i = $('#heard'), v = i.value; i.value = ''; heardText(v); });
+  $('#clearThread').addEventListener('click', function () { thread = []; suggSeq++; $('#suggState').textContent = ''; renderThread(); renderSugg([]); });
   QUICK.forEach(function (t) { $('#quick').append(h('button', { class: 'pill', onclick: function () { reply(t); } }, t)); });
 
   /* ---------- Ma vie ---------- */
@@ -1136,7 +1241,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
           .then(function (b) { blobs[cle(e.texte)] = new Blob([b], { type: 'audio/mpeg' }); }).catch(function () {});
       })).then(function () {
         if (!Object.keys(blobs).length) return;
-        setPack(blobs); pack.auto = man.moteur || true; renderPack();
+        setPack(blobs); pack.auto = man.moteur || true; pack.textes = man.phrases.map(function (e) { return e.texte; }); renderPack();
         dbReplace(blobs).catch(function () {});
       });
     }).catch(function () {});
