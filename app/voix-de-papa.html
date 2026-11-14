@@ -230,11 +230,15 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
 
   <section class="view" id="v-conversation" hidden>
     <h1>Conversation</h1>
-    <p class="note">Touchez « Écouter » : l'iPad écoute la personne qui vous parle, puis propose des réponses écrites comme papa les dirait. Touchez une réponse pour la dire. Les réponses que sa voix ne connaît pas encore sont dites avec la voix de l'iPad, puis envoyées à Claude pour être refaites avec sa voix.</p>
+    <p class="note">Touchez « Démarrer la conversation » : l'appareil écoute en continu la personne qui vous parle et propose, à chaque phrase, des réponses écrites comme papa les dirait. Touchez une réponse pour la dire. L'écoute se met en pause pendant que papa parle, puis reprend toute seule. Les réponses que sa voix ne connaît pas encore sont dites avec la voix de l'iPad, puis envoyées à Claude pour être refaites avec sa voix.</p>
     <div class="thread" id="thread"></div>
     <div class="block">
       <h2>Ce que dit mon interlocuteur</h2>
-      <button class="mic" id="micBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg><span id="micLabel">Écouter</span></button>
+      <button class="mic" id="micBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg><span id="micLabel">Démarrer la conversation</span></button>
+      <div class="addrow" id="convCtl" style="margin-top:10px" hidden>
+        <button class="small-btn" id="convPause">Pause</button>
+        <button class="small-btn" id="convEnd">Terminer la conversation</button>
+      </div>
       <p class="live" id="live" aria-live="polite"></p>
       <textarea class="field" id="heard" style="width:100%;margin-top:10px" placeholder="Ou écrivez ici ce que dit la personne" aria-label="Ce que dit l'interlocuteur"></textarea>
       <div class="addrow" style="margin-top:10px">
@@ -552,6 +556,8 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
       u.lang = 'fr-FR'; u.rate = S.rate || 0.95;
       var v = voices.filter(function (x) { return x.name === S.voice; })[0] || voices[0];
       if (v) u.voice = v;
+      u.onstart = function () { if (typeof speakingOn === 'function') speakingOn(); };
+      u.onend = u.onerror = function () { if (typeof speakingOff === 'function') speakingOff(); };
       synth.speak(u);
     } catch (e) {}
   }
@@ -637,6 +643,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     SECTIONS.forEach(function (sec) {
       var secHit = sec.kw.reduce(function (n, k) { return n + (new RegExp('\\b' + k + '\\b').test(q) ? 1 : 0); }, 0);
       (S.life[sec.id] || []).forEach(function (e) {
+        if (e.ex) return;
         var ew = words(e.t), overlap = qw.filter(function (w) { return ew.indexOf(w) >= 0; }).length;
         var score = secHit * 3 + overlap;
         if (score > 0) scored.push({ text: e.t, src: sec.label, score: score });
@@ -644,7 +651,7 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
     });
     scored.sort(function (a, b) { return b.score - a.score; }).slice(0, 4).forEach(function (s) { push(s.text, s.src); });
     if (!out.length) {
-      (S.life.identite || []).slice(0, 2).forEach(function (e) { push(e.t, 'Qui je suis'); });
+      (S.life.identite || []).filter(function (e) { return !e.ex; }).slice(0, 2).forEach(function (e) { push(e.t, 'Qui je suis'); });
       push('Pouvez-vous préciser votre question ?', 'Réponse courante');
     }
     return out;
@@ -714,43 +721,81 @@ nav.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent
   }
   function heardText(v) { v = (v || '').trim(); if (!v) return; thread.push({ who: 'them', text: v }); renderThread(); aiSuggest(v); }
 
-  // Écoute : dictée de Claude si disponible, sinon reconnaissance vocale de Safari ou Chrome
-  var listening = false, rec = null, dict = null, buf = '';
+  // Conversation permanente : dictée de Claude, sinon reconnaissance vocale du navigateur, sinon dictée du clavier
+  var conv = { on: false, paused: false, mode: '', buf: '', t: 0, wake: null, kbLen: 0 };
+  var rec = null, dict = null, dictReady = false;
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  function micUi(on, msg) {
-    listening = on; var b = $('#micBtn'); b.setAttribute('aria-pressed', String(on));
-    $('#micLabel').textContent = on ? 'J\'écoute… toucher pour terminer' : 'Écouter';
+  // Pendant que papa parle, ce que le micro entend est ignoré (c'est sa propre voix)
+  var speaking = false, speakT = 0;
+  function speakingOn() { speaking = true; clearTimeout(speakT); }
+  function speakingOff() { clearTimeout(speakT); speakT = setTimeout(function () { speaking = false; conv.buf = ''; }, 700); }
+  player.addEventListener('play', speakingOn); player.addEventListener('ended', speakingOff); player.addEventListener('pause', speakingOff);
+  function convUi(msg) {
+    var b = $('#micBtn'); b.setAttribute('aria-pressed', String(conv.on && !conv.paused));
+    $('#micLabel').textContent = !conv.on ? 'Démarrer la conversation' : conv.paused ? 'Reprendre l\'écoute' : conv.mode === 'clavier' ? 'Touchez le micro du clavier' : 'J\'écoute…';
+    $('#convCtl').hidden = !conv.on; $('#convPause').hidden = conv.paused;
     if (msg != null) $('#live').textContent = msg;
   }
-  function finish() { var v = buf.trim(); buf = ''; micUi(false, ''); if (v) heardText(v); }
+  function flushSoon(ms) { clearTimeout(conv.t); conv.t = setTimeout(function () { var v = conv.buf.trim(); conv.buf = ''; if (v.length > 1 && conv.on && !conv.paused) { $('#live').textContent = ''; heardText(v); } }, ms); }
+  function gotFinal(t) { if (!conv.on || conv.paused || speaking) return; conv.buf = (conv.buf + ' ' + t).trim(); $('#live').textContent = conv.buf; flushSoon(1300); }
+  function gotPartial(t) { if (!conv.on || conv.paused || speaking) return; $('#live').textContent = (conv.buf + ' ' + t).trim(); clearTimeout(conv.t); }
   cap('dictation').then(function (d) {
-    if (!d) return; dict = d;
-    d.onPartial(function (e) { $('#live').textContent = (buf + ' ' + e.text).trim(); });
-    d.onFinal(function (e) { buf = (buf + ' ' + e.text).trim(); $('#live').textContent = buf; });
-    d.onState(function (e) { if (e.state === 'idle' && listening) finish(); });
+    if (!d) return; dict = d; dictReady = true;
+    d.onPartial(function (e) { gotPartial(e.text); });
+    d.onFinal(function (e) { gotFinal(e.text); });
+    d.onState(function (e) { if (e.state === 'idle' && conv.on && conv.mode === 'dictee' && !conv.paused) { conv.paused = true; convUi('L\'écoute s\'est arrêtée. Touchez « Reprendre l\'écoute ».'); } });
   });
-  function startRec() {
-    if (!Rec) { micUi(false, 'Cet appareil ne sait pas écouter ici : écrivez ce que dit la personne.'); return; }
+  function startNavigateur() {
     try {
       rec = new Rec(); rec.lang = 'fr-FR'; rec.interimResults = true; rec.continuous = true;
       rec.onresult = function (e) {
-        var fin = '', tmp = '';
-        for (var i = 0; i < e.results.length; i++) { if (e.results[i].isFinal) fin += e.results[i][0].transcript + ' '; else tmp += e.results[i][0].transcript; }
-        buf = fin.trim(); $('#live').textContent = (fin + tmp).trim();
-        clearTimeout(rec._t); rec._t = setTimeout(function () { try { rec.stop(); } catch (x) {} }, 2200);
+        var tmp = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) gotFinal(e.results[i][0].transcript); else tmp += e.results[i][0].transcript; }
+        if (tmp) gotPartial(tmp);
       };
-      rec.onerror = function (e) { var m = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Micro refusé : autorisez le micro, ou écrivez ce que dit la personne.' : e.error === 'no-speech' ? 'Je n\'ai rien entendu.' : ''; if (m) { buf = ''; micUi(false, m); } };
-      rec.onend = function () { if (listening) { var live = $('#live').textContent; if (!buf && live) buf = live; finish(); } };
-      micUi(true, ''); rec.start();
-    } catch (e) { micUi(false, 'Écoute impossible ici : écrivez ce que dit la personne.'); }
+      rec.onerror = function (e) { if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') { rec = null; startClavier('Le micro n\'est pas accessible ici. '); } };
+      rec.onend = function () { if (rec && conv.on && !conv.paused && conv.mode === 'navigateur') { try { rec.start(); } catch (x) { conv.paused = true; convUi('L\'écoute s\'est arrêtée. Touchez « Reprendre l\'écoute ».'); } } };
+      conv.mode = 'navigateur'; convUi(''); rec.start(); return true;
+    } catch (e) { rec = null; return false; }
+  }
+  // Dernier recours (iPad, iPhone) : la dictée du clavier ; les réponses arrivent dès que la personne s'arrête de parler
+  function startClavier(why) {
+    conv.mode = 'clavier'; var f = $('#heard'); conv.kbLen = f.value.length;
+    convUi((why || '') + 'Touchez le micro du clavier, à côté de la barre d\'espace : les réponses apparaîtront dès que la personne fera une pause.');
+    try { f.focus(); } catch (e) {}
+  }
+  $('#heard').addEventListener('input', function () {
+    if (!conv.on || conv.mode !== 'clavier' || conv.paused) return;
+    var f = $('#heard'); if (f.value.length < conv.kbLen) conv.kbLen = f.value.length;
+    clearTimeout(conv.t); conv.t = setTimeout(function () {
+      var v = f.value.slice(conv.kbLen).trim(); conv.kbLen = f.value.length;
+      if (v.length > 1 && !speaking) heardText(v);
+    }, 2000);
+  });
+  function wake(on) {
+    try {
+      if (on && navigator.wakeLock && !conv.wake) navigator.wakeLock.request('screen').then(function (w) { conv.wake = w; }).catch(function () {});
+      if (!on && conv.wake) { conv.wake.release(); conv.wake = null; }
+    } catch (e) {}
+  }
+  function listen() {
+    conv.paused = false; conv.buf = '';
+    if (dict && dictReady) { conv.mode = 'dictee'; convUi(''); dict.start().catch(function (e) { dict = null; if (!(Rec && startNavigateur())) startClavier(); }); return; }
+    if (Rec && startNavigateur()) return;
+    startClavier();
+  }
+  function stopListen() {
+    clearTimeout(conv.t);
+    if (conv.mode === 'dictee' && dict) dict.stop().catch(function () {});
+    if (rec) { var r = rec; rec = null; try { r.stop(); } catch (e) {} }
   }
   $('#micBtn').addEventListener('click', function () {
-    stopAll();
-    if (listening) { if (dict) dict.stop().catch(function () {}); if (rec) try { rec.stop(); } catch (e) {} return; }
-    buf = '';
-    if (dict) { micUi(true, ''); dict.start().catch(function () { dict = null; startRec(); }); return; }
-    startRec();
+    if (conv.on && !conv.paused) { if (conv.mode === 'clavier') { try { $('#heard').focus(); } catch (e) {} } return; }
+    conv.on = true; wake(true); listen();
   });
+  $('#convPause').addEventListener('click', function () { stopListen(); conv.paused = true; convUi('Écoute en pause.'); });
+  $('#convEnd').addEventListener('click', function () { stopListen(); conv.on = false; conv.paused = false; conv.mode = ''; wake(false); convUi(''); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && conv.on) { conv.wake = null; wake(true); } });
   function renderSugg(list) {
     var box = $('#sugg'); box.textContent = '';
     if (!list.length) { box.append(h('div', { class: 'empty' }, 'Les réponses proposées apparaîtront ici.')); return; }
