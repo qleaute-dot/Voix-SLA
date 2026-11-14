@@ -200,3 +200,7 @@ privé de l'artefact (document `envois/e1794495491336`, asset `510a5f38…`).
 - 01:12 UTC Redémarrage du conteneur : tout arrêté (F5 à l'étape ~1440, sauvegarde à 1380).
   Swap réactivé (swapon /root/swapfile). Reprise F5 depuis 1380 (poids seuls + clés EMA initted/step
   requises par load_checkpoint) → f5t/ft4.log ; pipe/nuit5.sh arrête à 04:30 et génère V4 ; nuit3.sh enchaîne.
+- 05:20 UTC V4 prête : F5 ~3200 étapes (1380 + 1816) + Applio papa doux + débruitage.
+  Mesures n3 : timbre 0.588 (ft3 0.656, ft2 0.649, ft3+papa2 0.607) ; mots faux >15 % : 7/20 (ft3 4, ft2 2).
+  Publié (artefact v32) : n3c = Version 3, n3d = Version 4 ; retirés f5a f5b v_lent v_long (déjà notés) → 466 fichiers.
+  F5 reprend jusqu'à 06:30 UTC pour la Version 5.
